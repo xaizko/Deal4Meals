@@ -12,30 +12,34 @@ async function createSchemas() {
 	console.log('Connected to Tiger Data');
 
 	const query = `
-	CREATE TABLE IF NOT EXISTS Users (
-		id SERIAL PRIMARY KEY,
-		username VARCHAR(50) UNIQUE NOT NULL,
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-	);
+        CREATE TABLE IF NOT EXISTS Users (
+          id SERIAL PRIMARY KEY,
+          username VARCHAR(50) UNIQUE NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
 
-	CREATE TABLE IF NOT EXISTS Deals (
-		id SERIAL PRIMARY KEY,
-		user_id INTEGER REFERENCES Users(id),
-		item_name VARCHAR(255) NOT NULL,
-		price DECIMAL(10, 2) NOT NULL,
-		original_price DECIMAL(10, 2) NOT NULL,
-		macros JSONB,
-		deal_score INTEGER,
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-	);
+        DROP TABLE IF EXISTS Deals CASCADE;
+        
+        CREATE TABLE Deals (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER REFERENCES Users(id),
+          item_name VARCHAR(255) NOT NULL,
+          price DECIMAL(10, 2) NOT NULL,
+          original_price DECIMAL(10, 2) NOT NULL,
+          macros JSONB,
+          deal_score INTEGER,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          start_date TIMESTAMP NOT NULL,
+          expired_at TIMESTAMP NOT NULL
+        );
 
-	CREATE TABLE IF NOT EXISTS MealPlans (
-		id SERIAL PRIMARY KEY,
-		user_id INTEGER REFERENCES Users(id),
-		plan_data JSONB NOT NULL,
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-	);
-	`;
+        CREATE TABLE IF NOT EXISTS MealPlans (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER REFERENCES Users(id),
+          plan_data JSONB NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `;	
 
 	await client.query(query);
 	console.log('Schemas created successfully');
