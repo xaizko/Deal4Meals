@@ -1,19 +1,9 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
+import { Router } from 'express';
 
-dotenv.config();
+const router = Router();
 
-const app = express();
-const port = process.env.PORT;
-
-app.use(cors());
-app.use(express.json());
-
-app.get('/deals', (req, res) => {
-  res.json({ status: 'ok', message: '67 diddy mustard' });
+router.get('/deals', (req, res) => {
+  res.json({ status: 'ok', message: '67 diddy mustard'});
 });
 
-app.listen(port, () => {
-  console.log(`API listening on port ${port}`);
-});
+export default router;
