@@ -53,47 +53,6 @@ function readRating(value: unknown): number {
 	return 0
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === 'object' && value !== null
-}
-
-function errorFrom(payload: unknown, fallback: string): string {
-	return isRecord(payload) && typeof payload.error === 'string' ? payload.error : fallback
-}
-
-async function adjustPosterReputation(userId: number, delta: number) {
-	const currentResponse = await fetch(`${API_URL}/user/${userId}`)
-	const currentPayload: unknown = await currentResponse.json()
-	if (!currentResponse.ok) {
-		throw new Error(errorFrom(currentPayload, 'Could not load the poster’s reputation.'))
-	}
-	const current = isRecord(currentPayload) ? readRating(currentPayload.reputation) : 0
-
-	const updateResponse = await fetch(`${API_URL}/user/${userId}/reputation`, {
-		method: 'PATCH',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ reputation: current + delta }),
-	})
-	const updatePayload: unknown = await updateResponse.json()
-	if (!updateResponse.ok) {
-		throw new Error(errorFrom(updatePayload, 'Could not update the poster’s reputation.'))
-	}
-}
-
-function voteDelta(
-	current: 'like' | 'dislike' | null,
-	next: 'like' | 'dislike',
-): { value: number; reaction: 'like' | 'dislike' | null } {
-	if (next === 'like') {
-		if (current === 'like') return { value: -1, reaction: null }
-		if (current === 'dislike') return { value: 2, reaction: 'like' }
-		return { value: 1, reaction: 'like' }
-	}
-	if (current === 'dislike') return { value: 1, reaction: null }
-	if (current === 'like') return { value: -2, reaction: 'dislike' }
-	return { value: -1, reaction: 'dislike' }
-}
-
 function formatDaysTime(deal: Deal) {
 	if (!deal.start_date && !deal.expired_at) return 'Days: — · Time: —'
 		const start = deal.start_date ? new Date(deal.start_date) : null

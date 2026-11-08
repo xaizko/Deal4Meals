@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { BRAND } from '../brand.ts'
-import { SignInModa, type SignInCredentials } from './sign_in_moda.tsx'
+import { SignInModa } from './sign_in_moda.tsx'
 import { SignUpModa, type SignUpCredentials } from './sign_up_moda.tsx'
 
 export type ProfileModaProps = {
@@ -28,7 +28,6 @@ export function ProfileModa({
   const [signInOpen, setSignInOpen] = useState(false)
   const [signUpOpen, setSignUpOpen] = useState(false)
   const [sessionUsername, setSessionUsername] = useState(username)
-  const [currentUser, setCurrentUser] = useState<{ id: number; username: string } | null>(null)
   const signedIn = signedInProp ?? signedInLocal
 
   if (!open && !signInOpen && !signUpOpen) return null
