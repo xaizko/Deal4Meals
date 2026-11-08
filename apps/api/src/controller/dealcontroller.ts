@@ -196,8 +196,4 @@ router.post('/deals', async (req, res) => {
   }
 });
 
-
-
-
-
 export default router;
