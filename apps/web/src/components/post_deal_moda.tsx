@@ -4,7 +4,7 @@ import {
   type FormEvent,
   type ReactNode,
 } from 'react'
-import { BRAND } from '../brand'
+import { BRAND } from '../brand.ts'
 
 const REGIONS = ['Downtown', 'Campus', 'Midtown', 'North Side', 'South Side'] as const
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const
@@ -93,7 +93,7 @@ export function PostDealModa({ open, onClose, onSubmit }: PostDealModaProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4 sm:items-center"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 px-4 pt-16 pb-8 sm:pt-24"
       role="presentation"
       onClick={onClose}
     >
@@ -101,7 +101,7 @@ export function PostDealModa({ open, onClose, onSubmit }: PostDealModaProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="post-deal-title"
-        className="my-4 w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl sm:p-6"
+        className="mb-8 w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl sm:p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-start justify-between gap-3">
@@ -194,11 +194,15 @@ export function PostDealModa({ open, onClose, onSubmit }: PostDealModaProps) {
             <textarea
               required
               rows={3}
+              maxLength={500}
               value={form.description}
               onChange={(e) => update('description', e.target.value)}
               placeholder="Describe the deal and any conditions"
-              className={`${inputClass} resize-y`}
+              className={`${inputClass} h-24 resize-none overflow-y-auto`}
             />
+            <span className="mt-1 block text-right text-xs text-zinc-500">
+              {form.description.length}/500
+            </span>
           </Field>
 
           <div>
