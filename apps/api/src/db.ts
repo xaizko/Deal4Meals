@@ -2,7 +2,10 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-import { Pool } from 'pg';
+import { Pool, types } from 'pg';
+
+// Preserve timezone-less database timestamps as local wall-clock values.
+types.setTypeParser(1114, (value) => value.replace(' ', 'T'));
 
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
