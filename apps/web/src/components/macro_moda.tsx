@@ -17,6 +17,41 @@ export type MacroModaProps = {
 	onClose: () => void
 }
 
+function formatValidity(deal: Deal) {
+	if (deal.valid_days?.length) return deal.valid_days.join(', ')
+
+	if (!deal.start_date && !deal.expired_at) return 'Not specified'
+	const dateFormatter = new Intl.DateTimeFormat(undefined, {
+		month: 'short',
+		day: 'numeric',
+		year: 'numeric',
+	})
+	const start = deal.start_date ? new Date(deal.start_date) : null
+	const end = deal.expired_at ? new Date(deal.expired_at) : null
+	const startLabel =
+		start && !Number.isNaN(start.getTime()) ? dateFormatter.format(start) : null
+	const endLabel = end && !Number.isNaN(end.getTime()) ? dateFormatter.format(end) : null
+
+	if (startLabel && endLabel) return `${startLabel} – ${endLabel}`
+	return startLabel ?? endLabel ?? 'Not specified'
+}
+
+function formatValidityTime(deal: Deal) {
+	if (!deal.start_date && !deal.expired_at) return null
+	const formatter = new Intl.DateTimeFormat(undefined, {
+		hour: 'numeric',
+		minute: '2-digit',
+	})
+	const start = deal.start_date ? new Date(deal.start_date) : null
+	const end = deal.expired_at ? new Date(deal.expired_at) : null
+	const startLabel =
+		start && !Number.isNaN(start.getTime()) ? formatter.format(start) : null
+	const endLabel = end && !Number.isNaN(end.getTime()) ? formatter.format(end) : null
+
+	if (startLabel && endLabel) return `${startLabel} – ${endLabel}`
+	return startLabel ?? endLabel
+}
+
 function readMacros(macros: unknown): DealMacros {
 	if (!macros || typeof macros !== 'object') return {}
 	const m = macros as Record<string, unknown>
@@ -36,6 +71,7 @@ export function MacroModa({ deal, open, onClose }: MacroModaProps) {
 	if (!open) return null
 
 		const macros = readMacros(deal.macros)
+		const validityTime = formatValidityTime(deal)
 		const rows = [
 			{ label: 'Calories', key: 'kcal', value: macros.kcal, unit: 'kcal' },
 			{ label: 'Protein', key: 'protein_g', value: macros.protein_g, unit: 'g' },
@@ -73,6 +109,24 @@ export function MacroModa({ deal, open, onClose }: MacroModaProps) {
 							{deal.description ? (
 								<p className="mt-2 text-sm text-zinc-700">{deal.description}</p>
 							) : null}
+							<dl className="mt-4 space-y-2 rounded-lg bg-zinc-50 p-3 text-sm">
+								<div>
+									<dt className="font-semibold text-zinc-700">Location</dt>
+									<dd className="text-zinc-600">
+										{deal.location?.trim() || 'Not specified'}
+									</dd>
+								</div>
+								<div>
+									<dt className="font-semibold text-zinc-700">Valid days</dt>
+									<dd className="text-zinc-600">{formatValidity(deal)}</dd>
+								</div>
+								{validityTime ? (
+									<div>
+										<dt className="font-semibold text-zinc-700">Valid time</dt>
+										<dd className="text-zinc-600">{validityTime}</dd>
+									</div>
+								) : null}
+							</dl>
 							{deal.deal_url ? (
 								<a
 									href={deal.deal_url}
