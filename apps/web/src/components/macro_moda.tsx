@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import { BRAND } from '../brand.ts'
 import type { Deal } from './deal_card'
-
-const API_URL = 'http://localhost:3000'
+import { API_URL } from '../api'
 
 export type DealMacros = {
 	kcal?: number
