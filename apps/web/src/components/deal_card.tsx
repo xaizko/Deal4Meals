@@ -55,6 +55,7 @@ function formatLocation(deal: Deal) {
 
 export function DealCard({ deal, onViewDetails, onLike, onDislike }: DealCardProps) {
   const [macroOpen, setMacroOpen] = useState(false)
+  const saved = Math.max(0, deal.original_price - deal.price)
 
   function handleViewDetails() {
     setMacroOpen(true)
@@ -91,6 +92,11 @@ export function DealCard({ deal, onViewDetails, onLike, onDislike }: DealCardPro
             <p className="text-2xl font-bold leading-none" style={{ color: BRAND }}>
               {formatMoney(deal.price)}
             </p>
+            {saved > 0 ? (
+              <p className="mt-1 text-xs font-semibold text-amber-600">
+                Saved {formatMoney(saved)}
+              </p>
+            ) : null}
           </div>
         </div>
 

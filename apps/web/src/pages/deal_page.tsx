@@ -1,7 +1,12 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { DealCard, type Deal } from '../components/deal_card'
 
-const PAGE_SIZE = 4
+/** Phone <640 → 6, medium <1024 → 4, big ≥1024 → 6 */
+function getPageSize(width: number) {
+  if (width < 640) return 6
+  if (width < 1024) return 4
+  return 6
+}
 
 const SAMPLE_DEALS: Deal[] = [
   {
@@ -175,7 +180,26 @@ const SAMPLE_DEALS: Deal[] = [
 ]
 
 export function DealPage() {
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+  const [pageSize, setPageSize] = useState(() =>
+    typeof window === 'undefined' ? 6 : getPageSize(window.innerWidth),
+  )
+  const [visibleCount, setVisibleCount] = useState(pageSize)
+
+  useEffect(() => {
+    function syncPageSize() {
+      const next = getPageSize(window.innerWidth)
+      setPageSize((prev) => {
+        if (prev !== next) {
+          setVisibleCount((count) => (count <= prev ? next : Math.max(count, next)))
+        }
+        return next
+      })
+    }
+
+    syncPageSize()
+    window.addEventListener('resize', syncPageSize)
+    return () => window.removeEventListener('resize', syncPageSize)
+  }, [])
 
   const visibleDeals = useMemo(
     () => SAMPLE_DEALS.slice(0, visibleCount),
@@ -199,7 +223,7 @@ export function DealPage() {
               type="button"
               onClick={() =>
                 setVisibleCount((count) =>
-                  Math.min(count + PAGE_SIZE, SAMPLE_DEALS.length),
+                  Math.min(count + pageSize, SAMPLE_DEALS.length),
                 )
               }
               className="rounded-md border border-zinc-300 bg-white px-5 py-2.5 text-sm font-semibold text-zinc-800 hover:bg-zinc-50"

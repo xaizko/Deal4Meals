@@ -67,15 +67,9 @@ export function WeeklyPlanBox({ option, onSelect }: WeeklyPlanBoxProps) {
             {formatMoney(option.price)}
           </p>
           {saved != null && saved > 0 ? (
-            <div className="mt-1 flex flex-col items-end gap-1">
-              <p className="text-xs font-semibold text-amber-600">
-                Saved {formatMoney(saved)}
-              </p>
-              <span className="inline-flex items-center gap-1 rounded-md bg-amber-300 px-1.5 py-0.5 text-[10px] font-bold text-zinc-900">
-                <BookmarkIcon className="h-3 w-3" />
-                Saved
-              </span>
-            </div>
+            <p className="mt-1 text-xs font-semibold text-amber-600">
+              Saved {formatMoney(saved)}
+            </p>
           ) : null}
         </div>
       </div>
@@ -123,14 +117,6 @@ function StarIcon({
         strokeLinejoin="round"
         d="M12 3l2.9 5.88 6.49.94-4.7 4.58 1.11 6.47L12 17.77l-5.8 3.1 1.11-6.47-4.7-4.58 6.49-.94L12 3z"
       />
-    </svg>
-  )
-}
-
-function BookmarkIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
-      <path d="M6 4a2 2 0 012-2h8a2 2 0 012 2v18l-6-3-6 3V4z" />
     </svg>
   )
 }
