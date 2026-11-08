@@ -174,7 +174,7 @@ const SAMPLE_DEALS: Deal[] = [
   },
 ]
 
-export function HomePage() {
+export function DealPage() {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
 
   const visibleDeals = useMemo(
