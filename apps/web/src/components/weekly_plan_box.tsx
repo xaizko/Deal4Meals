@@ -1,122 +1,109 @@
-import type { CSSProperties } from 'react'
-import { BRAND } from '../brand'
+import './weekly_plan_box.css'
+import { PinIcon } from '../components/assets/PinIcon';
+import { StarIcon } from '../components/assets/StarIcon';
 
-/** One meal option in a weekly plan day — filled later by Gemini / API */
+// One meal option filled later by Gemini
 export type WeeklyOption = {
-  id: string | number
-  optionNumber: number
-  /** Address only (no distance) */
-  location: string
-  rating?: string
-  /** Cost of the special */
-  price: number
-  /** Original price before the special, used for Saved */
-  original_price?: number
-  dietary?: string
-  item_name?: string
-  merchant?: string
+	id: string | number
+	optionNumber: number
+	location: string
+	rating?: string
+	price: number
+	original_price?: number
+	dietary?: string
+	item_name?: string
+	merchant?: string
+	image_url?: string
+	macros?: WeeklyMacros
+}
+
+export type WeeklyMacros = {
+	protein?: number
+	carbs?: number
+	fats?: number
+	calories?: number
 }
 
 export type WeeklyPlanBoxProps = {
-  option: WeeklyOption
-  onSelect?: (option: WeeklyOption) => void
+	option: WeeklyOption
+	onSelect?: (option: WeeklyOption) => void
 }
 
 function formatMoney(amount: number) {
-  return `$${amount.toFixed(2)}`
+	return `$${amount.toFixed(2)}`
 }
 
 export function WeeklyPlanBox({ option, onSelect }: WeeklyPlanBoxProps) {
-  const saved =
-    option.original_price != null
-      ? Math.max(0, option.original_price - option.price)
-      : null
+	const saved =
+		option.original_price != null
+			? Math.max(0, option.original_price - option.price)
+			: null
 
-  return (
-    <article
-      className="flex cursor-pointer flex-col overflow-hidden rounded-xl border border-zinc-300 bg-white shadow-sm transition hover:shadow-md"
-      onClick={() => onSelect?.(option)}
-    >
-      <div
-        className="px-3 py-2 text-center text-sm font-semibold text-white"
-        style={{ backgroundColor: BRAND }}
-      >
-        Option {option.optionNumber}
-      </div>
+			return (
+				<article
+					className="weekly-plan-box"
+					onClick={() => onSelect?.(option)}
+				>
+					{option.image_url ? (
+						<img
+							src={option.image_url}
+							alt=""
+							className="weekly-plan-box__image"
+							/>
+					) : null}
 
-      <div className="flex flex-1 items-start justify-between gap-3 p-4">
-        <div className="min-w-0 space-y-2">
-          {option.item_name ? (
-            <p className="truncate text-sm font-semibold text-zinc-900">
-              {option.item_name}
-            </p>
-          ) : null}
-          <p className="flex items-center gap-1.5 text-sm text-zinc-600">
-            <PinIcon className="h-4 w-4 shrink-0" style={{ color: BRAND }} />
-            <span className="truncate">{option.location || 'Placeholder location'}</span>
-          </p>
-          <p className="flex items-center gap-1.5 text-sm text-zinc-600">
-            <StarIcon className="h-4 w-4 shrink-0" style={{ color: BRAND }} />
-            <span>{option.rating ?? 'Placeholder rating'}</span>
-          </p>
-        </div>
+					<div className="weekly-plan-box__option">
+						Option {option.optionNumber}
+					</div>
 
-        <div className="shrink-0 text-right">
-          <p className="text-xs text-zinc-500">Price</p>
-          <p className="text-2xl font-bold leading-none" style={{ color: BRAND }}>
-            {formatMoney(option.price)}
-          </p>
-          {saved != null && saved > 0 ? (
-            <p className="mt-1 text-xs font-semibold text-amber-600">
-              Saved {formatMoney(saved)}
-            </p>
-          ) : null}
-        </div>
-      </div>
+					<div className="weekly-plan-box__content">
+						<div className="weekly-plan-box__details">
+							{option.item_name ? (
+								<p className="weekly-plan-box__name">
+									{option.item_name}
+								</p>
+							) : null}
+							<p className="weekly-plan-box__merchant">
+								<PinIcon />
+								<span>
+									{option.merchant || option.location || 'Merchant not provided'}
+								</span>
+							</p>
+							{option.rating ? (
+								<p className="weekly-plan-box__rating">
+									<StarIcon />
+									<span>{option.rating}</span>
+								</p>
+							) : null}
+						</div>
 
-      <div className="border-t border-zinc-200 bg-zinc-100 px-4 py-2 text-xs text-zinc-600">
-        Dietary: {option.dietary?.trim() ? option.dietary : 'not specified'}
-      </div>
-    </article>
-  )
-}
+						<div className="weekly-plan-box__price">
+							<p className="weekly-plan-box__price-label">Price</p>
+							<p className="weekly-plan-box__price-amount">
+								{formatMoney(option.price)}
+							</p>
+							{saved != null && saved > 0 ? (
+								<p className="weekly-plan-box__saved">
+								Saved {formatMoney(saved)}
+								</p>
+							) : null}
+						</div>
+					</div>
 
-function PinIcon({
-  className,
-  style,
-}: {
-  className?: string
-  style?: CSSProperties
-}) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className} style={style} aria-hidden="true">
-      <path d="M12 2a7 7 0 00-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 00-7-7zm0 9.5A2.5 2.5 0 1112 6a2.5 2.5 0 010 5.5z" />
-    </svg>
-  )
-}
-
-function StarIcon({
-  className,
-  style,
-}: {
-  className?: string
-  style?: CSSProperties
-}) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      className={className}
-      style={style}
-      aria-hidden="true"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M12 3l2.9 5.88 6.49.94-4.7 4.58 1.11 6.47L12 17.77l-5.8 3.1 1.11-6.47-4.7-4.58 6.49-.94L12 3z"
-      />
-    </svg>
-  )
+						{option.macros && Object.values(option.macros).some((amount) => amount !== undefined) ? (
+							<div className="weekly-plan-box__nutrition">
+								Nutrition:{' '}
+								{[
+									['Calories', option.macros.calories, ' kcal'],
+									['Protein', option.macros.protein, 'g'],
+									['Carbs', option.macros.carbs, 'g'],
+									['Fat', option.macros.fats, 'g'],
+								]
+								.filter(([, amount]) => amount !== undefined)
+								.map(([label, amount, unit]) => `${label} ${amount}${unit}`)
+								.join(' · ')}
+							</div>
+						) : null}
+				</article>
+			)
 }
