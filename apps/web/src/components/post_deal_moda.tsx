@@ -198,7 +198,7 @@ export function PostDealModa({ open, onClose, onSubmit }: PostDealModaProps) {
               value={form.description}
               onChange={(e) => update('description', e.target.value)}
               placeholder="Describe the deal and any conditions"
-              className={`${inputClass} resize-none overflow-hidden`}
+              className={`${inputClass} h-24 resize-none overflow-y-auto`}
             />
             <span className="mt-1 block text-right text-xs text-zinc-500">
               {form.description.length}/500
