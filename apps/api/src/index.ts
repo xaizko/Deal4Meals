@@ -3,7 +3,9 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import dealRoutes from './controller/dealcontroller';
 import userRoutes from './controller/usercontroller';
+import mealPlannerRoutes from './controller/mealPlannerController';
 import foodRoutes from './controller/nutritioncontroller';
+
 dotenv.config();
 
 const app = express();
@@ -17,6 +19,8 @@ app.get('/health', (req, res) => {
 });
 
 app.use('/', dealRoutes);
+app.use('/', userRoutes);
+app.use('/', mealPlannerRoutes);
 app.use('/', userRoutes);
 app.use('/', foodRoutes);
 

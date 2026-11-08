@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { pool } from '../db';
 import bcrypt from 'bcrypt';
 
+
 const saltRounds = 10;
 const router = Router();
 
@@ -74,17 +75,17 @@ router.post('/user', async (req, res) =>{
         return res.status(400).json({ error: 'password is required' });
     }
 
-    try {const result = await pool.query(
-        `INSERT INTO Users (
-          username, password
-        )
-        VALUES ($1, $2)
-        RETURNING *`,
-        [
-            body.username,
-            await bcrypt.hash(body.password, saltRounds)
-        ]
+    try {const hash = await bcrypt.hash(body.password, saltRounds);
+
+    const result = await pool.query(
+      `INSERT INTO users (username, password, reputation)
+      VALUES ($1, $2)
+      ON CONFLICT (username) DO UPDATE
+        SET password = EXCLUDED.password
+      RETURNING id`,
+      [body.username, hash]
     );
+    
     const user = result.rows[0];
     return res.status(201).json(user);
     }
