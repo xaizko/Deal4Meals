@@ -11,17 +11,20 @@ interface Deal{
     deal_score: number | null;
     created_at: Date | string;
 }
-interface CreateDealBody{
+interface CreateDealBody {
   user_id?: number | null;
   item_name: string;
+  merchant: string;
+  category: string;
+  location: string;
+  image_url?: string | null;
   price: number;
   original_price: number;
   macros?: Record<string, any> | null;
   deal_score?: number | null;
-  start_date: string;   
-  expired_at: string;   
+  start_date: string;
+  expired_at: string;
 }
-
 router.patch('/deals/:id/net_likes/:value', async (req, res) => {
   const id = parseInt(req.params.id, 10);
   const value = parseInt(req.params.value, 10);
@@ -150,9 +153,17 @@ router.get('/deals', async (req, res) => {
 router.post('/deals', async (req, res) => {
   const body = req.body as CreateDealBody;
 
-  // Basic validation
   if (!body.item_name || typeof body.item_name !== 'string') {
     return res.status(400).json({ error: 'item_name is required' });
+  }
+  if (!body.merchant || typeof body.merchant !== 'string') {
+    return res.status(400).json({ error: 'merchant is required' });
+  }
+  if (!body.category || typeof body.category !== 'string') {
+    return res.status(400).json({ error: 'category is required' });
+  }
+  if (!body.location || typeof body.location !== 'string') {
+    return res.status(400).json({ error: 'location is required' });
   }
   if (typeof body.price !== 'number' || body.price < 0) {
     return res.status(400).json({ error: 'price must be a non-negative number' });
@@ -167,14 +178,18 @@ router.post('/deals', async (req, res) => {
   try {
     const result = await pool.query(
       `INSERT INTO deals (
-         user_id, item_name, price, original_price,
-         macros, deal_score, start_date, expired_at
+         user_id, item_name, merchant, category, location, image_url,
+         price, original_price, macros, deal_score, start_date, expired_at
        )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING *`,
       [
         body.user_id ?? null,
         body.item_name,
+        body.merchant,
+        body.category,
+        body.location,
+        body.image_url ?? null,
         body.price,
         body.original_price,
         body.macros ?? null,
@@ -185,7 +200,6 @@ router.post('/deals', async (req, res) => {
     );
 
     const deal = result.rows[0];
-    // convert decimals to numbers
     deal.price = parseFloat(deal.price);
     deal.original_price = parseFloat(deal.original_price);
 
