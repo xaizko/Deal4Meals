@@ -108,62 +108,127 @@ router.get('/deals/:dealId/photos', async (req, res) => {
 	}
 })
 
-router.patch('/deals/:id/net_likes/:value', async (req, res) => {
-	const id = parseInt(req.params.id, 10);
-	const value = parseInt(req.params.value, 10);
+router.post('/deals/:id/like', async (req, res) => {
+  const dealId = parseInt(req.params.id, 10);
+  const userId = req.body.user_id;
+  if (isNaN(dealId) || !userId) {
+    return res.status(400).json({ error: 'deal id and user_id are required' });
+  }
 
-	if (isNaN(id)) {
-		return res.status(400).json({ error: 'Invalid deal id' });
-	}
-	if (isNaN(value)) {
-		return res.status(400).json({ error: 'Invalid modification value' });
-	}
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
 
-	try {
-		const result = await pool.query(
-			`UPDATE deals
-			SET net_likes = COALESCE(net_likes, 0) + $1
-			WHERE id = $2
-			RETURNING ${DEAL_COLUMNS}`,
-			[value, id]
-		);
+    // Remove opposite vote if it exists
+    const removedDislike = await client.query(
+      `DELETE FROM deal_dislikes WHERE user_id = $1 AND deal_id = $2 RETURNING *`,
+      [userId, dealId]
+    );
 
-		if (result.rows.length === 0) {
-			return res.status(404).json({ error: 'Deal not found' });
-		}
+    // Insert the like
+    const insert = await client.query(
+      `INSERT INTO deal_likes (user_id, deal_id)
+       VALUES ($1, $2)
+       ON CONFLICT DO NOTHING
+       RETURNING *`,
+      [userId, dealId]
+    );
 
-		res.json(result.rows[0]);
-	} catch (err) {
-		console.error('Error updating net likes:', err);
-		res.status(500).json({ error: 'Failed to update net likes' });
-	}
+    if (insert.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'Already liked' });
+    }
+
+    // +1 for the like, extra +1 if we removed a dislike
+    const delta = removedDislike.rows.length > 0 ? 2 : 1;
+
+    const result = await client.query(
+      `UPDATE deals SET net_likes = net_likes + $1 WHERE id = $2 RETURNING id, net_likes`,
+      [delta, dealId]
+    );
+
+    await client.query('COMMIT');
+    res.json(result.rows[0]);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error(err);
+    res.status(500).json({ error: 'Failed to like deal' });
+  } finally {
+    client.release();
+  }
+});
+router.delete('/deals/:id/like', async (req, res) => {
+  const dealId = parseInt(req.params.id, 10);
+  const userId = req.body.user_id;
+
+  if (isNaN(dealId) || !userId) {
+    return res.status(400).json({ error: 'deal id and user_id are required' });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const del = await client.query(
+      `DELETE FROM deal_likes
+       WHERE user_id = $1 AND deal_id = $2
+       RETURNING *`,
+      [userId, dealId]
+    );
+
+    if (del.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Like not found' });
+    }
+
+    const result = await client.query(
+      `UPDATE deals
+      SET net_likes = (
+        SELECT COUNT(*) FROM deal_likes WHERE deal_id = $1
+      ) - (
+        SELECT COUNT(*) FROM deal_dislikes WHERE deal_id = $1
+      )
+      WHERE id = $1
+      RETURNING id, net_likes`,
+      [dealId]
+    );
+
+    await client.query('COMMIT');
+    res.json(result.rows[0]);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error(err);
+    res.status(500).json({ error: 'Failed to unlike deal' });
+  } finally {
+    client.release();
+  }
 });
 
 router.get('/deals/search', async (req, res) => {
-	const name = req.query.name as string | undefined;
+  const name = req.query.name as string | undefined;
+  const userId = req.query.user_id ? parseInt(req.query.user_id as string, 10) : null;
 
-	if (!name || typeof name !== 'string' || name.trim() === '') {
-		return res.status(400).json({ error: 'name query parameter is required' });
-	}
+  if (!name || typeof name !== 'string' || name.trim() === '') {
+    return res.status(400).json({ error: 'name query parameter is required' });
+  }
 
-	try {
-		const result = await pool.query(
-			`SELECT ${DEAL_COLUMNS}
-			FROM deals
-			WHERE item_name ILIKE $1
-			ORDER BY created_at DESC`,
-			[`%${name}%`]
-		);
+  const result = await pool.query(
+    `SELECT d.*,
+            (dl.user_id IS NOT NULL) AS liked_by_me,
+            (dd.user_id IS NOT NULL) AS disliked_by_me
+     FROM deals d
+     LEFT JOIN deal_likes dl ON dl.deal_id = d.id AND dl.user_id = $2
+     LEFT JOIN deal_dislikes dd ON dd.deal_id = d.id AND dd.user_id = $2
+     WHERE d.item_name ILIKE $1
+     ORDER BY d.created_at DESC`,
+    [`%${name}%`, userId]
+  );
 
-		res.json(result.rows.map((row) => ({
-			...row,
-			price: parseFloat(row.price),
-			original_price: parseFloat(row.original_price),
-		})));
-	} catch (err) {
-		console.error('Error searching deals by name:', err);
-		res.status(500).json({ error: 'Failed to search deals' });
-	}
+  res.json(result.rows.map((row) => ({
+    ...row,
+    price: parseFloat(row.price),
+    original_price: parseFloat(row.original_price),
+  })));
 });
 
 router.get('/deals/:id', async (req, res) => {
@@ -221,25 +286,22 @@ router.get('/deals/user/:id', async (req, res) => {
 });
 
 router.get('/deals', async (req, res) => {
-	try {
-		const result = await pool.query(
-			`SELECT ${DEAL_COLUMNS}
-			FROM deals
-			ORDER BY created_at DESC`
-		);
+  const userId = req.query.user_id ? parseInt(req.query.user_id as string, 10) : null;
 
-		// pg returns numeric columns as strings by default — convert if you want numbers
-		const deals: Deal[] = result.rows.map((row) => ({
-			...row,
-			price: parseFloat(row.price),
-			original_price: parseFloat(row.original_price),
-		}));
+  const result = await pool.query(
+    `SELECT d.*,
+            (dl.user_id IS NOT NULL) AS liked_by_me,
+            (dd.user_id IS NOT NULL) AS disliked_by_me
+     FROM deals d
+     LEFT JOIN deal_likes dl
+       ON dl.deal_id = d.id AND dl.user_id = $1
+     LEFT JOIN deal_dislikes dd
+       ON dd.deal_id = d.id AND dd.user_id = $1
+     ORDER BY d.created_at DESC`,
+    [userId]
+  );
 
-		res.json(deals);
-	} catch (err) {
-		console.error('Error fetching deals:', err);
-		res.status(500).json({ error: 'Failed to fetch deals' });
-	}
+  res.json(result.rows);
 });
 
 router.post('/deals', async (req, res) => {
@@ -420,6 +482,100 @@ Date.parse(body.expired_at) < Date.parse(body.start_date)
 	} finally {
 		client?.release()
 	}
+});
+
+// Dislike
+router.post('/deals/:id/dislike', async (req, res) => {
+  const dealId = parseInt(req.params.id, 10);
+  const userId = req.body.user_id;
+
+  if (isNaN(dealId) || !userId) {
+    return res.status(400).json({ error: 'deal id and user_id are required' });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Remove any existing like from this user (switching vote)
+    const removedLike = await client.query(
+      `DELETE FROM deal_likes WHERE user_id = $1 AND deal_id = $2 RETURNING *`,
+      [userId, dealId]
+    );
+
+    // Insert the dislike
+    const insert = await client.query(
+      `INSERT INTO deal_dislikes (user_id, deal_id)
+       VALUES ($1, $2)
+       ON CONFLICT DO NOTHING
+       RETURNING *`,
+      [userId, dealId]
+    );
+
+    if (insert.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'Already disliked' });
+    }
+
+    // -1 for the dislike, extra -1 if we also removed a like
+    const delta = removedLike.rows.length > 0 ? -2 : -1;
+
+    const result = await client.query(
+      `UPDATE deals
+       SET net_likes = net_likes + $1
+       WHERE id = $2
+       RETURNING id, net_likes`,
+      [delta, dealId]
+    );
+
+    await client.query('COMMIT');
+    res.json(result.rows[0]);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error(err);
+    res.status(500).json({ error: 'Failed to dislike deal' });
+  } finally {
+    client.release();
+  }
+});
+
+// Remove a dislike
+router.delete('/deals/:id/dislike', async (req, res) => {
+  const dealId = parseInt(req.params.id, 10);
+  const userId = req.body.user_id;
+
+  if (isNaN(dealId) || !userId) {
+    return res.status(400).json({ error: 'deal id and user_id are required' });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const del = await client.query(
+      `DELETE FROM deal_dislikes WHERE user_id = $1 AND deal_id = $2 RETURNING *`,
+      [userId, dealId]
+    );
+
+    if (del.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Dislike not found' });
+    }
+
+    const result = await client.query(
+      `UPDATE deals SET net_likes = net_likes + 1 WHERE id = $1 RETURNING id, net_likes`,
+      [dealId]
+    );
+
+    await client.query('COMMIT');
+    res.json(result.rows[0]);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error(err);
+    res.status(500).json({ error: 'Failed to remove dislike' });
+  } finally {
+    client.release();
+  }
 });
 
 export default router;

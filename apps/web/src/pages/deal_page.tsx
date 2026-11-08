@@ -11,9 +11,11 @@ function getPageSize(width: number) {
 export function DealPage({
 	newDeal,
 	searchQuery,
+	currentUser,
 }: {
 	newDeal: Deal | null
 	searchQuery: string
+	currentUser: { id: number; username: string } | null
 }) {
 	const [deals, setDeals] = useState<Deal[]>([])
 	const [loading, setLoading] = useState(true)
@@ -31,14 +33,19 @@ export function DealPage({
 									setLoading(true)
 									setError(null)
 									const endpoint = searchQuery
-										? `/deals/search?name=${encodeURIComponent(searchQuery)}`
-										: '/deals'
+										? `/deals/search?name=${encodeURIComponent(searchQuery)}&user_id=${currentUser?.id ?? ''}`
+										: `/deals?user_id=${currentUser?.id ?? ''}`
 									const res = await fetch(`${API_URL}${endpoint}`, {
 										signal: controller.signal,
 									})
 									if (!res.ok) throw new Error(`HTTP ${res.status}`)
 									const data: Deal[] = await res.json()
-									setDeals(data)
+									const normalized = data.map((d) => ({
+									...d,
+									price: typeof d.price === 'string' ? parseFloat(d.price) : d.price,
+									original_price: typeof d.original_price === 'string' ? parseFloat(d.original_price) : d.original_price,
+									}))
+									setDeals(normalized)
 								} catch (err) {
 									if (err instanceof DOMException && err.name === 'AbortError') return
 									console.error(err)
@@ -49,7 +56,7 @@ export function DealPage({
 							}
 							loadDeals()
 							return () => controller.abort()
-						}, [searchQuery])
+						}, [searchQuery, currentUser?.id])
 
 						// Responsive page size
 						useEffect(() => {
@@ -115,7 +122,11 @@ export function DealPage({
 							<>
 							<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-8">
 							{visibleDeals.map((deal) => (
-								<DealCard key={deal.id} deal={deal} />
+								<DealCard
+								key={`${deal.id}-${currentUser?.id ?? 'guest'}`}
+								deal={deal}
+								currentUserId={currentUser?.id ?? null}
+								/>
 							))}
 							</div>
 

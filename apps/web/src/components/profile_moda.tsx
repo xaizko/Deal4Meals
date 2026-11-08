@@ -7,11 +7,9 @@ export type ProfileModaProps = {
   open: boolean
   onClose: () => void
   username?: string
-  /** Total likes this user has received across deals */
   totalLikes?: number
-  /** Controlled signed-in state (optional — defaults to internal state) */
   signedIn?: boolean
-  onSignIn?: (credentials: SignInCredentials) => void
+  onSignIn?: (user: { id: number; username: string; reputation?: number }) => void
   onSignUp?: (credentials: SignUpCredentials) => void
   onSignOut?: () => void
 }
@@ -30,14 +28,15 @@ export function ProfileModa({
   const [signInOpen, setSignInOpen] = useState(false)
   const [signUpOpen, setSignUpOpen] = useState(false)
   const [sessionUsername, setSessionUsername] = useState(username)
+  const [currentUser, setCurrentUser] = useState<{ id: number; username: string } | null>(null)
   const signedIn = signedInProp ?? signedInLocal
 
   if (!open && !signInOpen && !signUpOpen) return null
 
-  function handleSignedIn(credentials: SignInCredentials) {
+  function handleSignedIn(user: { id: number; username: string; reputation?: number }) {
     if (signedInProp === undefined) setSignedInLocal(true)
-    setSessionUsername(credentials.username || username)
-    onSignIn?.(credentials)
+    setSessionUsername(user.username)
+    onSignIn?.(user)
     setSignInOpen(false)
   }
 
