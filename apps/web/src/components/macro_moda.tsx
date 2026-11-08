@@ -1,5 +1,8 @@
+import { useEffect, useState } from 'react'
 import { BRAND } from '../brand.ts'
 import type { Deal } from './deal_card'
+
+const API_URL = 'http://localhost:3000'
 
 export type DealMacros = {
 	kcal?: number
@@ -7,8 +10,9 @@ export type DealMacros = {
 	fat_g?: number
 	carbs_g?: number
 	sugar_g?: number
-	sodium_g?: number
+	sodium_mg?: number
 	fiber_g?: number
+	serving?: string
 }
 
 export type MacroModaProps = {
@@ -17,32 +21,88 @@ export type MacroModaProps = {
 	onClose: () => void
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === 'object' && value !== null
+}
+
+function readNumber(value: unknown): number | undefined {
+	if (typeof value === 'number' && Number.isFinite(value)) return value
+	if (typeof value === 'string' && value.trim() !== '') {
+		const amount = Number(value)
+		if (Number.isFinite(amount)) return amount
+	}
+	return undefined
+}
+
+function firstNumber(record: Record<string, unknown>, keys: string[]): number | undefined {
+	for (const key of keys) {
+		const amount = readNumber(record[key])
+		if (amount !== undefined) return amount
+	}
+	return undefined
+}
+
 function readMacros(macros: unknown): DealMacros {
-	if (!macros || typeof macros !== 'object') return {}
-	const m = macros as Record<string, unknown>
-	const num = (v: unknown) => (typeof v === 'number' ? v : undefined)
+	if (!isRecord(macros)) return {}
 	return {
-		kcal: num(m.kcal),
-		protein_g: num(m.protein_g),
-		fat_g: num(m.fat_g),
-		carbs_g: num(m.carbs_g),
-		sugar_g: num(m.sugar_g),
-		sodium_g: num(m.sodium_g),
-		fiber_g: num(m.fiber_g),
+		kcal: firstNumber(macros, ['calories', 'kcal']),
+		protein_g: firstNumber(macros, ['protein', 'protein_g']),
+		fat_g: firstNumber(macros, ['fats', 'fat', 'fat_g']),
+		carbs_g: firstNumber(macros, ['carbs', 'carbs_g']),
+		sugar_g: firstNumber(macros, ['sugar_g', 'sugar']),
+		sodium_mg: firstNumber(macros, ['sodium_mg', 'sodium']),
+		fiber_g: firstNumber(macros, ['fiber_g', 'fiber']),
+		serving: typeof macros.serving === 'string' ? macros.serving : undefined,
 	}
 }
 
 export function MacroModa({ deal, open, onClose }: MacroModaProps) {
-	if (!open) return null
+	const [macros, setMacros] = useState<DealMacros>(() => readMacros(deal.macros))
+	const [loading, setLoading] = useState(false)
+	const [error, setError] = useState<string | null>(null)
 
-		const macros = readMacros(deal.macros)
+	useEffect(() => {
+		if (!open) return
+
+		const controller = new AbortController()
+		setMacros(readMacros(deal.macros))
+		setLoading(true)
+		setError(null)
+
+		async function loadDeal() {
+			try {
+				const response = await fetch(`${API_URL}/deals/${deal.id}`, {
+					signal: controller.signal,
+				})
+				const payload: unknown = await response.json()
+				if (!response.ok) {
+					const message =
+						isRecord(payload) && typeof payload.error === 'string'
+							? payload.error
+							: 'Could not load macro data.'
+					throw new Error(message)
+				}
+				setMacros(readMacros(isRecord(payload) ? payload.macros : undefined))
+			} catch (err) {
+				if (err instanceof DOMException && err.name === 'AbortError') return
+				setError(err instanceof Error ? err.message : 'Could not load macro data.')
+			} finally {
+				if (!controller.signal.aborted) setLoading(false)
+			}
+		}
+
+		void loadDeal()
+		return () => controller.abort()
+	}, [open, deal.id, deal.macros])
+
+	if (!open) return null
 		const rows = [
 			{ label: 'Calories', key: 'kcal', value: macros.kcal, unit: 'kcal' },
 			{ label: 'Protein', key: 'protein_g', value: macros.protein_g, unit: 'g' },
 			{ label: 'Fat', key: 'fat_g', value: macros.fat_g, unit: 'g' },
 			{ label: 'Carbs', key: 'carbs_g', value: macros.carbs_g, unit: 'g' },
 			{ label: 'Sugar', key: 'sugar_g', value: macros.sugar_g, unit: 'g' },
-			{ label: 'Sodium', key: 'sodium_g', value: macros.sodium_g, unit: 'g' },
+			{ label: 'Sodium', key: 'sodium_mg', value: macros.sodium_mg, unit: 'mg' },
 			{ label: 'Fiber', key: 'fiber_g', value: macros.fiber_g, unit: 'g' },
 		] as const
 
@@ -99,6 +159,17 @@ export function MacroModa({ deal, open, onClose }: MacroModaProps) {
 						<p className="text-xs font-medium tracking-wide text-zinc-500 uppercase">
 							Macros
 						</p>
+						{macros.serving ? (
+							<p className="mt-1 text-xs text-zinc-500">Serving: {macros.serving}</p>
+						) : null}
+						{loading ? (
+							<p className="mt-2 text-sm text-zinc-500">Loading macro data…</p>
+						) : null}
+						{error ? (
+							<p role="alert" className="mt-2 text-sm text-red-600">
+								{error}
+							</p>
+						) : null}
 						<ul className="mt-2 space-y-2">
 							{rows.map((row) => (
 							<li
