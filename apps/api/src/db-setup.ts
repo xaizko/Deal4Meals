@@ -69,6 +69,24 @@ async function setupDatabase() {
 			 )
 		`);
 
+		await client.query(`
+			CREATE TABLE IF NOT EXISTS deal_likes (
+			user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			deal_id INTEGER NOT NULL REFERENCES deals(id) ON DELETE CASCADE,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY (user_id, deal_id)
+			);
+			`)
+
+		await client.query(`
+			CREATE TABLE IF NOT EXISTS deal_dislikes (
+			user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			deal_id INTEGER NOT NULL REFERENCES deals(id) ON DELETE CASCADE,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY (user_id, deal_id)
+			);
+			`)
+
 		await client.query('COMMIT');
 			console.log('Database schema recreated successfully');
 		} catch (error) {

@@ -9,6 +9,8 @@ import { ProfileModa } from './profile_moda'
 export type HeaderProps = {
 	onSearch: (query: string) => void
 	onDealCreated: (deal: Deal) => void
+	onSignIn: (user: { id: number; username: string }) => void
+  	onSignOut: () => void
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -29,7 +31,8 @@ async function encodePhoto(file: File) {
 	}
 }
 
-export function Header({ onSearch, onDealCreated }: HeaderProps) {
+export function Header({ onSearch, onDealCreated, onSignIn, onSignOut}: HeaderProps)
+    {
 	const navigate = useNavigate()
 	const [postOpen, setPostOpen] = useState(false)
 	const [profileOpen, setProfileOpen] = useState(false)
@@ -237,7 +240,11 @@ export function Header({ onSearch, onDealCreated }: HeaderProps) {
 			onClose={() => setPostOpen(false)}
 			onSubmit={submitDeal}
 		/>
-		<ProfileModa open={profileOpen} onClose={() => setProfileOpen(false)} />
+		<ProfileModa 
+		open={profileOpen} 
+		onClose={() => setProfileOpen(false) }
+		onSignIn={onSignIn}
+    	onSignOut={onSignOut} />
 		</>
 	)
 }

@@ -28,10 +28,13 @@ export type Deal = {
 	rating?: string
 	net_likes?: number
 	image_url?: string
+	liked_by_me?: boolean
+	disliked_by_me?: boolean
 }
 
 export type DealCardProps = {
 	deal: Deal
+	currentUserId?: number | null
 	onViewDetails?: (deal: Deal) => void
 	onLike?: (deal: Deal) => void
 	onDislike?: (deal: Deal) => void
@@ -166,16 +169,21 @@ function DealExpiry({ expiredAt }: { expiredAt?: string }) {
 			)
 }
 
-export function DealCard({ deal, onViewDetails, onLike, onDislike }: DealCardProps) {
+export function DealCard({ deal, currentUserId, onViewDetails, onLike, onDislike }: DealCardProps) {
 	const [macroOpen, setMacroOpen] = useState(false)
-	const [reaction, setReaction] = useState<'like' | 'dislike' | null>(null)
+	const [reaction, setReaction] = useState<'like' | 'dislike' | null>(
+	deal.liked_by_me ? 'like' : deal.disliked_by_me ? 'dislike' : null
+	)
 	const [rating, setRating] = useState(() => readRating(deal.net_likes))
 	const [voting, setVoting] = useState(false)
 	const saved = Math.max(0, deal.original_price - deal.price)
 
 	useEffect(() => {
-		setRating(readRating(deal.net_likes))
-	}, [deal.id, deal.net_likes])
+	setReaction(
+		deal.liked_by_me ? 'like' : deal.disliked_by_me ? 'dislike' : null
+	)
+	setRating(readRating(deal.net_likes))
+	}, [currentUserId, deal.id, deal.liked_by_me, deal.disliked_by_me, deal.net_likes])
 
 	function handleViewDetails() {
 		setMacroOpen(true)
@@ -183,35 +191,55 @@ export function DealCard({ deal, onViewDetails, onLike, onDislike }: DealCardPro
 	}
 
 	async function castVote(next: 'like' | 'dislike') {
-		if (voting) return
-		const { value, reaction: nextReaction } = voteDelta(reaction, next)
-		setVoting(true)
-		try {
-			const response = await fetch(`${API_URL}/deals/${deal.id}/net_likes/${value}`, {
-				method: 'PATCH',
-			})
-			const payload: unknown = await response.json()
-			if (!response.ok) {
-				throw new Error(errorFrom(payload, 'Could not update the rating.'))
-			}
-			const posterId =
-				isRecord(payload) && typeof payload.user_id === 'number'
-					? payload.user_id
-					: deal.user_id
-			const nextRating = isRecord(payload) ? readRating(payload.net_likes) : rating + value
-			setRating(nextRating)
-			setReaction(nextReaction)
-			if (typeof posterId === 'number') {
-				await adjustPosterReputation(posterId, value)
-			}
-			const updated = { ...deal, net_likes: nextRating }
-			if (next === 'like') onLike?.(updated)
-			else onDislike?.(updated)
-		} catch (err) {
-			console.error(err)
-		} finally {
-			setVoting(false)
+		if (voting || !currentUserId) return
+		console.log('voting as', currentUserId, 'on deal', deal.id, next)
+  setVoting(true)
+  try {
+		// Clicking the same reaction again = remove it
+		if (reaction === next) {
+		const endpoint = next === 'like' ? 'like' : 'dislike'
+		const res = await fetch(`${API_URL}/deals/${deal.id}/${endpoint}`, {
+			method: 'DELETE',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ user_id: currentUserId }),
+		})
+		if (!res.ok) throw new Error(`Failed to remove ${next}`)
+		const data = await res.json()
+		setReaction(null)
+		setRating(data.net_likes ?? rating + (next === 'like' ? -1 : 1))
+		return
 		}
+
+		// Switching or setting a new reaction
+		const endpoint = next === 'like' ? 'like' : 'dislike'
+		const res = await fetch(`${API_URL}/deals/${deal.id}/${endpoint}`, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ user_id: currentUserId }),
+		})
+
+		if (!res.ok) {
+		const data = await res.json().catch(() => ({}))
+		if (res.status === 409) {
+			// already in that state on the server — just sync UI
+			setReaction(next)
+			return
+		}
+		throw new Error(data.error || `Failed to ${next}`)
+		}
+
+		const data = await res.json()
+		setReaction(next)
+		setRating(data.net_likes)
+
+		const updated = { ...deal, net_likes: data.net_likes }
+		if (next === 'like') onLike?.(updated)
+		else onDislike?.(updated)
+	} catch (err) {
+		console.error(err)
+	} finally {
+		setVoting(false)
+	}
 	}
 
 	return (

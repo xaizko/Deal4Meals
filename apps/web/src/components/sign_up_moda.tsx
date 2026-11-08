@@ -23,17 +23,50 @@ export function SignUpModa({ open, onClose, onSignUp }: SignUpModaProps) {
 
   if (!open) return null
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault()
+
     if (password !== confirmPassword) {
       setError('Passwords do not match')
       return
     }
+
+    const trimmedUsername = username.trim()
+    if (!trimmedUsername) {
+      setError('Username is required')
+      return
+    }
+
     setError('')
-    onSignUp?.({ username: username.trim(), password })
-    setPassword('')
-    setConfirmPassword('')
-    onClose()
+
+    try {
+      const res = await fetch('http://localhost:3000/user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: trimmedUsername,
+          password,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        // 409 = username taken, 400 = validation, etc.
+        setError(data.error || 'Failed to create account')
+        return
+      }
+
+      // Success — hand the new user up and close
+      onSignUp?.({ username: trimmedUsername, password })
+      setUsername('')
+      setPassword('')
+      setConfirmPassword('')
+      onClose()
+    } catch (err) {
+      console.error(err)
+      setError('Could not reach the server')
+    }
   }
 
   return (

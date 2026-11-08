@@ -9,7 +9,7 @@ export type SignInCredentials = {
 export type SignInModaProps = {
   open: boolean
   onClose: () => void
-  onSignIn?: (credentials: SignInCredentials) => void
+  onSignIn?: (user: { id: number; username: string; reputation?: number }) => void
 }
 
 const inputClass =
@@ -18,14 +18,45 @@ const inputClass =
 export function SignInModa({ open, onClose, onSignIn }: SignInModaProps) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
 
   if (!open) return null
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    onSignIn?.({ username: username.trim(), password })
-    setPassword('')
-    onClose()
+
+    const trimmedUsername = username.trim()
+    if (!trimmedUsername) {
+      setError('Username is required')
+      return
+    }
+
+    setError('')
+
+    try {
+      const res = await fetch('http://localhost:3000/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: trimmedUsername,
+          password,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || 'Invalid username or password')
+        return
+      }
+
+      onSignIn?.(data)
+      setPassword('')
+      onClose()
+    } catch (err) {
+      console.error(err)
+      setError('Could not reach the server')
+    }
   }
 
   return (
@@ -75,7 +106,7 @@ export function SignInModa({ open, onClose, onSignIn }: SignInModaProps) {
               className={inputClass}
             />
           </label>
-
+          {error ? <p className="text-sm text-red-600">{error}</p> : null}
           <label className="block">
             <span className="mb-1 block text-sm font-semibold text-zinc-900">
               Password
