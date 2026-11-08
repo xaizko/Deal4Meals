@@ -8,7 +8,7 @@ export function Footer() {
         <div>
           <Link
             to="/"
-            className="font-['Caveat_Brush',cursive] text-2xl tracking-wide text-white no-underline"
+            className="font-['Arial',Helvetica,sans-serif] text-2xl tracking-wide text-white no-underline"
           >
             DEALS4MEALS
           </Link>
