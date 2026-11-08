@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { API_URL } from '../api'
 import { DealCard, type Deal } from '../components/deal_card'
 
 function getPageSize(width: number) {
@@ -32,7 +33,7 @@ export function DealPage({
 									const endpoint = searchQuery
 										? `/deals/search?name=${encodeURIComponent(searchQuery)}`
 										: '/deals'
-									const res = await fetch(`http://localhost:3000${endpoint}`, {
+									const res = await fetch(`${API_URL}${endpoint}`, {
 										signal: controller.signal,
 									})
 									if (!res.ok) throw new Error(`HTTP ${res.status}`)
