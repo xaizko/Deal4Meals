@@ -65,6 +65,45 @@ router.get('/user', async (req, res) => {
   }
 });
 
+router.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+
+  if (!username || typeof username !== 'string') {
+    return res.status(400).json({ error: 'username is required' });
+  }
+  if (!password || typeof password !== 'string') {
+    return res.status(400).json({ error: 'password is required' });
+  }
+
+  try {
+    const result = await pool.query(
+      `SELECT id, username, password, reputation, created_at
+       FROM users
+       WHERE username = $1`,
+      [username]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: 'Invalid username or password' });
+    }
+
+    const user = result.rows[0];
+    const passwordMatch = await bcrypt.compare(password, user.password);
+
+    if (!passwordMatch) {
+      return res.status(401).json({ error: 'Invalid username or password' });
+    }
+
+    // Don't send the hash back
+    const safeUser = { ...user };
+    delete safeUser.password;
+    return res.json(safeUser);
+  } catch (err) {
+    console.error('Error logging in:', err);
+    return res.status(500).json({ error: 'Failed to log in' });
+  }
+});
+
 router.post('/user', async (req, res) =>{
     const body = req.body as CreateUserBody;
 

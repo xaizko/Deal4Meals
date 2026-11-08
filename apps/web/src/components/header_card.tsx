@@ -25,7 +25,7 @@ export function Header({ onSearch }: HeaderProps = {}) {
           <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
             <Link
               to="/"
-              className="shrink-0 font-['Caveat_Brush',cursive] text-xl tracking-wide text-white no-underline sm:text-2xl"
+              className="shrink-0 font-['Arial',Helvetica,sans-serif] text-xl tracking-wide text-white no-underline sm:text-2xl"
             >
               DEALS4MEALS
             </Link>

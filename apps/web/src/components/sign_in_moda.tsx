@@ -1,11 +1,9 @@
 import { useState, type FormEvent } from 'react'
-import { signInUser } from '../api.ts'
 import { BRAND } from '../brand.ts'
 
 export type SignInCredentials = {
   username: string
   password: string
-  id?: number
 }
 
 export type SignInModaProps = {
@@ -20,25 +18,14 @@ const inputClass =
 export function SignInModa({ open, onClose, onSignIn }: SignInModaProps) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [submitting, setSubmitting] = useState(false)
 
   if (!open) return null
 
-  async function handleSubmit(e: FormEvent) {
+  function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    setError('')
-    setSubmitting(true)
-    try {
-      const user = await signInUser(username.trim(), password)
-      onSignIn?.({ username: user.username, password, id: user.id })
-      setPassword('')
-      onClose()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to sign in')
-    } finally {
-      setSubmitting(false)
-    }
+    onSignIn?.({ username: username.trim(), password })
+    setPassword('')
+    onClose()
   }
 
   return (
@@ -104,8 +91,6 @@ export function SignInModa({ open, onClose, onSignIn }: SignInModaProps) {
             />
           </label>
 
-          {error ? <p className="text-sm text-red-600">{error}</p> : null}
-
           <div className="flex justify-end gap-2 pt-2">
             <button
               type="button"
@@ -116,11 +101,10 @@ export function SignInModa({ open, onClose, onSignIn }: SignInModaProps) {
             </button>
             <button
               type="submit"
-              disabled={submitting}
-              className="rounded-md px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60"
+              className="rounded-md px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
               style={{ backgroundColor: BRAND }}
             >
-              {submitting ? 'Signing in…' : 'Sign in'}
+              Sign in
             </button>
           </div>
         </form>
