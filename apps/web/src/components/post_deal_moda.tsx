@@ -194,7 +194,7 @@ export function PostDealModa({ open, onClose, onSubmit }: PostDealModaProps) {
             <textarea
               required
               rows={3}
-              maxLength={500}
+              maxLength={250}
               value={form.description}
               onChange={(e) => update('description', e.target.value)}
               placeholder="Describe the deal and any conditions"
