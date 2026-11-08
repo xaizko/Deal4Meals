@@ -4,6 +4,7 @@ import {
 	type WeeklyMacros,
 	type WeeklyOption,
 } from '../components/weekly_plan_box'
+import { API_URL } from '../api'
 import './weekly_page.css'
 
 export type WeeklyDayPlan = {
@@ -41,8 +42,6 @@ const INITIAL_PARAMETERS: MealPlanParameters = {
 	target_sodium: '0',
 	target_sugar: '0',
 }
-
-const API_URL = 'http://localhost:3000'
 
 // Type guard to check if a value is a non-null object
 function isRecord(value: unknown): value is Record<string, unknown> {

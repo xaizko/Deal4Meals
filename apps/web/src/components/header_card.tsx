@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { API_URL } from '../api'
 import { BRAND } from '../brand'
 import { PostDealModa, macrosFromManual, type PostDealForm } from './post_deal_moda'
 import type { Deal } from './deal_card'
@@ -9,8 +10,6 @@ export type HeaderProps = {
 	onSearch: (query: string) => void
 	onDealCreated: (deal: Deal) => void
 }
-
-const API_URL = 'http://localhost:3000'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === 'object' && value !== null
