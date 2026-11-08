@@ -26,6 +26,18 @@ export function Footer() {
           </Link>
         </nav>
       </div>
+      <p className="mx-auto max-w-7xl px-4 pb-4 text-xs leading-relaxed text-white/75 sm:px-6">
+        Nutrition data sourced from USDA FoodData Central: U.S. Department of Agriculture,
+        Agricultural Research Service. FoodData Central, 2019.{' '}
+        <a
+          href="https://fdc.nal.usda.gov"
+          className="text-white/90 underline"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          fdc.nal.usda.gov
+        </a>
+      </p>
     </footer>
   )
 }
