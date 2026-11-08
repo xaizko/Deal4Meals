@@ -1,1 +1,8 @@
 @import "tailwindcss";
+
+:root {
+  --brand: #066E14;
+  --accent: #066E14;
+  --accent-bg: color-mix(in srgb, #066E14 12%, white);
+  --accent-border: color-mix(in srgb, #066E14 45%, white);
+}

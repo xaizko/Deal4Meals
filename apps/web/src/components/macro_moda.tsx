@@ -1,6 +1,5 @@
+import { BRAND } from '../brand'
 import type { Deal } from './deal_card'
-
-const BRAND = '#066E14'
 
 export type DealMacros = {
   kcal?: number

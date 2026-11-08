@@ -186,8 +186,8 @@ export function DealPage() {
 
   return (
     <main className="flex-1 bg-zinc-100">
-      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-8">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-8">
           {visibleDeals.map((deal) => (
             <DealCard key={deal.id} deal={deal} />
           ))}

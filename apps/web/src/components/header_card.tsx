@@ -1,45 +1,59 @@
-const BRAND = '#066E14'
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { BRAND } from '../brand'
+import { PostDealModa } from './post_deal_moda'
+import { ProfileModa } from './profile_moda'
 
 export function Header() {
+  const [postOpen, setPostOpen] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
+
   return (
-    <header className="w-full text-white" style={{ backgroundColor: BRAND }}>
-      <div className="flex items-center justify-between gap-3 px-4 py-2.5 sm:px-5">
-        <a
-          href="/"
-          className="shrink-0 font-['Caveat_Brush',cursive] text-xl tracking-wide text-white no-underline sm:text-2xl"
-        >
-          DEALS4MEALS
-        </a>
-
-        <div className="flex shrink-0 items-center gap-2">
-          <button
-            type="button"
-            className="h-7 rounded-md bg-white px-3 text-xs font-semibold hover:bg-green-50"
-            style={{ color: BRAND }}
+    <>
+      <header className="w-full text-white" style={{ backgroundColor: BRAND }}>
+        <div className="flex items-center justify-between gap-3 px-4 py-2.5 sm:px-5">
+          <Link
+            to="/"
+            className="shrink-0 font-['Caveat_Brush',cursive] text-xl tracking-wide text-white no-underline sm:text-2xl"
           >
-            Weekly Plan
-          </button>
+            DEALS4MEALS
+          </Link>
 
-          <button
-            type="button"
-            aria-label="Add"
-            className="flex h-7 w-7 items-center justify-center rounded-full bg-white hover:bg-green-50"
-            style={{ color: BRAND }}
-          >
-            <PlusIcon className="h-4 w-4" />
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <Link
+              to="/weekly"
+              className="inline-flex h-7 items-center rounded-md bg-white px-3 text-xs font-semibold no-underline hover:bg-zinc-100"
+              style={{ color: BRAND }}
+            >
+              Weekly Plan
+            </Link>
 
-          <button
-            type="button"
-            aria-label="Profile"
-            className="flex h-7 w-7 items-center justify-center rounded-full bg-white hover:bg-green-50"
-            style={{ color: BRAND }}
-          >
-            <UserIcon className="h-4 w-4" />
-          </button>
+            <button
+              type="button"
+              aria-label="Post a deal"
+              onClick={() => setPostOpen(true)}
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-white hover:bg-zinc-100"
+              style={{ color: BRAND }}
+            >
+              <PlusIcon className="h-4 w-4" />
+            </button>
+
+            <button
+              type="button"
+              aria-label="Profile"
+              onClick={() => setProfileOpen(true)}
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-white hover:bg-zinc-100"
+              style={{ color: BRAND }}
+            >
+              <UserIcon className="h-4 w-4" />
+            </button>
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      <PostDealModa open={postOpen} onClose={() => setPostOpen(false)} />
+      <ProfileModa open={profileOpen} onClose={() => setProfileOpen(false)} />
+    </>
   )
 }
 

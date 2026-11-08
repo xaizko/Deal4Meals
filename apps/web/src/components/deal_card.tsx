@@ -1,7 +1,6 @@
 import { useState } from 'react'
+import { BRAND } from '../brand'
 import { MacroModa } from './macro_moda'
-
-const BRAND = '#066E14'
 
 /** Matches the Deals table in apps/api/src/db-setup.ts */
 export type Deal = {
@@ -51,14 +50,11 @@ function formatDaysTime(deal: Deal) {
 }
 
 function formatLocation(deal: Deal) {
-  const place = deal.location ?? 'Placeholder location'
-  if (deal.distance_mi == null) return place
-  return `${place} • ${deal.distance_mi.toFixed(1)} mi`
+  return deal.location ?? 'Placeholder location'
 }
 
 export function DealCard({ deal, onViewDetails, onLike, onDislike }: DealCardProps) {
   const [macroOpen, setMacroOpen] = useState(false)
-  const saved = Math.max(0, deal.original_price - deal.price)
 
   function handleViewDetails() {
     setMacroOpen(true)
@@ -95,15 +91,6 @@ export function DealCard({ deal, onViewDetails, onLike, onDislike }: DealCardPro
             <p className="text-2xl font-bold leading-none" style={{ color: BRAND }}>
               {formatMoney(deal.price)}
             </p>
-            <div className="mt-1 flex flex-col items-end gap-1">
-              <p className="text-xs font-semibold text-amber-600">
-                Saved {formatMoney(saved)}
-              </p>
-              <span className="inline-flex items-center gap-1 rounded-md bg-amber-300 px-1.5 py-0.5 text-[10px] font-bold text-zinc-900">
-                <BookmarkIcon className="h-3 w-3" />
-                Saved
-              </span>
-            </div>
           </div>
         </div>
 
@@ -159,14 +146,6 @@ export function DealCard({ deal, onViewDetails, onLike, onDislike }: DealCardPro
       onClose={() => setMacroOpen(false)}
     />
     </>
-  )
-}
-
-function BookmarkIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
-      <path d="M6 4a2 2 0 012-2h8a2 2 0 012 2v18l-6-3-6 3V4z" />
-    </svg>
   )
 }
 
