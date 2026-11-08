@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { BRAND } from '../brand'
-import { PostDealModa, type PostDealForm } from './post_deal_moda'
+import { PostDealModa, macrosFromManual, type PostDealForm } from './post_deal_moda'
 import type { Deal } from './deal_card'
 import { ProfileModa } from './profile_moda'
 
@@ -45,6 +45,18 @@ export function Header({ onSearch, onDealCreated }: HeaderProps) {
 				deal_url: form.dealUrl.trim() || null,
 				valid_days: form.validDays,
 				dietary_restrictions: form.dietary,
+				macros: form.nutrition
+					? {
+							protein: form.nutrition.serving.protein_g,
+							carbs: form.nutrition.serving.carbs_g,
+							fats: form.nutrition.serving.fat_g,
+							calories: form.nutrition.serving.kcal,
+							fdcId: form.nutrition.fdcId,
+							description: form.nutrition.description,
+							serving: form.nutrition.serving.label,
+							gramWeight: form.nutrition.serving.gramWeight,
+						}
+					: macrosFromManual(form.manualMacros),
 				start_date: `${form.validFrom}T${form.startTime}:00`,
 				expired_at: `${form.validUntil}T${form.endTime}:00`,
 			}),
