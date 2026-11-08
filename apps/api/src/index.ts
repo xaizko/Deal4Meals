@@ -5,6 +5,7 @@ import dealRoutes from './controller/dealcontroller';
 import userRoutes from './controller/usercontroller';
 import mealPlannerRoutes from './controller/mealPlannerController';
 import foodRoutes from './controller/nutritioncontroller';
+import dealValidationRoutes from './controller/dealValidationController';
 
 dotenv.config();
 
@@ -19,6 +20,7 @@ app.get('/health', (req, res) => {
 });
 
 app.use('/', dealRoutes);
+app.use('/', dealValidationRoutes);
 app.use('/', userRoutes);
 app.use('/', mealPlannerRoutes);
 app.use('/', userRoutes);

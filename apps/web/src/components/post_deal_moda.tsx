@@ -689,7 +689,7 @@ export function PostDealModa({ open, onClose, onSubmit }: PostDealModaProps) {
 								className="rounded-md px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
 								style={{ backgroundColor: BRAND }}
 								>
-									{submitting ? 'Submitting…' : 'Submit deal'}
+									{submitting ? 'Reviewing and submitting…' : 'Submit deal'}
 							</button>
 						</div>
 					</form>
