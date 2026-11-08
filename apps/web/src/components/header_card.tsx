@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { API_URL } from '../api'
 import { BRAND } from '../brand'
-import { PostDealModa, type PostDealForm } from './post_deal_moda'
+import { PostDealModa, macrosFromManual, type PostDealForm } from './post_deal_moda'
 import type { Deal } from './deal_card'
 import { ProfileModa } from './profile_moda'
 
@@ -44,6 +44,21 @@ export function Header({ onSearch, onDealCreated }: HeaderProps) {
 				deal_url: form.dealUrl.trim() || null,
 				valid_days: form.validDays,
 				dietary_restrictions: form.dietary,
+				macros: form.nutrition
+					? {
+							protein: form.nutrition.serving.protein_g,
+							carbs: form.nutrition.serving.carbs_g,
+							fats: form.nutrition.serving.fat_g,
+							calories: form.nutrition.serving.kcal,
+							sugar_g: form.nutrition.serving.sugar_g,
+							fiber_g: form.nutrition.serving.fiber_g,
+							sodium_mg: form.nutrition.serving.sodium_mg,
+							fdcId: form.nutrition.fdcId,
+							description: form.nutrition.description,
+							serving: form.nutrition.serving.label,
+							gramWeight: form.nutrition.serving.gramWeight,
+						}
+					: macrosFromManual(form.manualMacros),
 				start_date: `${form.validFrom}T${form.startTime}:00`,
 				expired_at: `${form.validUntil}T${form.endTime}:00`,
 			}),
@@ -94,6 +109,7 @@ export function Header({ onSearch, onDealCreated }: HeaderProps) {
 								: undefined,
 								start_date: typeof payload.start_date === 'string' ? payload.start_date : undefined,
 								expired_at: typeof payload.expired_at === 'string' ? payload.expired_at : undefined,
+								macros: 'macros' in payload ? payload.macros : undefined,
 		})
 	}
 
