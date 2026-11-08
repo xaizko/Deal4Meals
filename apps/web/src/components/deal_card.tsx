@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { getApiResourceUrl } from '../api'
 import { BRAND } from '../brand'
 import { MacroModa } from './macro_moda'
