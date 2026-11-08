@@ -48,6 +48,33 @@ function readRating(value: unknown): number {
 	return 0
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === 'object' && value !== null
+}
+
+function errorFrom(payload: unknown, fallback: string): string {
+	return isRecord(payload) && typeof payload.error === 'string' ? payload.error : fallback
+}
+
+async function adjustPosterReputation(userId: number, delta: number) {
+	const currentResponse = await fetch(`${API_URL}/user/${userId}`)
+	const currentPayload: unknown = await currentResponse.json()
+	if (!currentResponse.ok) {
+		throw new Error(errorFrom(currentPayload, 'Could not load the poster’s reputation.'))
+	}
+	const current = isRecord(currentPayload) ? readRating(currentPayload.reputation) : 0
+
+	const updateResponse = await fetch(`${API_URL}/user/${userId}/reputation`, {
+		method: 'PATCH',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ reputation: current + delta }),
+	})
+	const updatePayload: unknown = await updateResponse.json()
+	if (!updateResponse.ok) {
+		throw new Error(errorFrom(updatePayload, 'Could not update the poster’s reputation.'))
+	}
+}
+
 function voteDelta(
 	current: 'like' | 'dislike' | null,
 	next: 'like' | 'dislike',
@@ -163,21 +190,18 @@ export function DealCard({ deal, onViewDetails, onLike, onDislike }: DealCardPro
 			})
 			const payload: unknown = await response.json()
 			if (!response.ok) {
-				const message =
-					typeof payload === 'object' &&
-					payload !== null &&
-					'error' in payload &&
-					typeof payload.error === 'string'
-						? payload.error
-						: 'Could not update the rating.'
-				throw new Error(message)
+				throw new Error(errorFrom(payload, 'Could not update the rating.'))
 			}
-			const nextRating =
-				typeof payload === 'object' && payload !== null && 'net_likes' in payload
-					? readRating(payload.net_likes)
-					: rating + value
+			const posterId =
+				isRecord(payload) && typeof payload.user_id === 'number'
+					? payload.user_id
+					: deal.user_id
+			const nextRating = isRecord(payload) ? readRating(payload.net_likes) : rating + value
 			setRating(nextRating)
 			setReaction(nextReaction)
+			if (typeof posterId === 'number') {
+				await adjustPosterReputation(posterId, value)
+			}
 			const updated = { ...deal, net_likes: nextRating }
 			if (next === 'like') onLike?.(updated)
 			else onDislike?.(updated)

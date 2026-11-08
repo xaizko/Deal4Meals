@@ -58,7 +58,7 @@ router.patch('/deals/:id/net_likes/:value', async (req, res) => {
 	try {
 		const result = await pool.query(
 			`UPDATE deals
-			SET net_likes = net_likes + $1
+			SET net_likes = COALESCE(net_likes, 0) + $1
 			WHERE id = $2
 			RETURNING ${DEAL_COLUMNS}`,
 			[value, id]
