@@ -2,8 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { BRAND } from '../brand.ts'
 
 export type SignUpCredentials = {
-  name: string
-  email: string
+  username: string
   password: string
 }
 
@@ -17,8 +16,7 @@ const inputClass =
   'w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-[#066E14] focus:ring-1 focus:ring-[#066E14]'
 
 export function SignUpModa({ open, onClose, onSignUp }: SignUpModaProps) {
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
@@ -32,7 +30,7 @@ export function SignUpModa({ open, onClose, onSignUp }: SignUpModaProps) {
       return
     }
     setError('')
-    onSignUp?.({ name: name.trim(), email: email.trim(), password })
+    onSignUp?.({ username: username.trim(), password })
     setPassword('')
     setConfirmPassword('')
     onClose()
@@ -57,7 +55,7 @@ export function SignUpModa({ open, onClose, onSignUp }: SignUpModaProps) {
               Sign up
             </h2>
             <p className="mt-1 text-sm text-zinc-500">
-              Create an account to post deals and track likes.
+              Choose a username to create your account.
             </p>
           </div>
           <button
@@ -73,30 +71,15 @@ export function SignUpModa({ open, onClose, onSignUp }: SignUpModaProps) {
         <form className="space-y-4" onSubmit={handleSubmit}>
           <label className="block">
             <span className="mb-1 block text-sm font-semibold text-zinc-900">
-              Name
+              Username
             </span>
             <input
               required
               type="text"
-              autoComplete="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Your name"
-              className={inputClass}
-            />
-          </label>
-
-          <label className="block">
-            <span className="mb-1 block text-sm font-semibold text-zinc-900">
-              Email
-            </span>
-            <input
-              required
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="name@example.com"
+              autoComplete="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="your_username"
               className={inputClass}
             />
           </label>
