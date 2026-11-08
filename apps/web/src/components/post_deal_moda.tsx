@@ -4,7 +4,7 @@ import {
   type FormEvent,
   type ReactNode,
 } from 'react'
-import { BRAND } from '../brand'
+import { BRAND } from '../brand.ts'
 
 const REGIONS = ['Downtown', 'Campus', 'Midtown', 'North Side', 'South Side'] as const
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const
@@ -194,11 +194,15 @@ export function PostDealModa({ open, onClose, onSubmit }: PostDealModaProps) {
             <textarea
               required
               rows={3}
+              maxLength={500}
               value={form.description}
               onChange={(e) => update('description', e.target.value)}
               placeholder="Describe the deal and any conditions"
-              className={`${inputClass} resize-y`}
+              className={`${inputClass} max-h-40 resize-y overflow-y-auto`}
             />
+            <span className="mt-1 block text-right text-xs text-zinc-500">
+              {form.description.length}/500
+            </span>
           </Field>
 
           <div>
