@@ -118,6 +118,13 @@ router.post('/deals/validate', async (req, res) => {
 			valid: review.valid,
 			issues: review.issues.slice(0, 5),
 		})
+
+		/* Break in case of emergency during demo
+		return res.json({
+			valid: true,
+			issues: [],
+		});
+		*/
 	} catch (error) {
 		console.error('Gemini deal validation failed:', error)
 		return res.status(502).json({ error: 'Could not validate this deal right now. Please try again.' })
