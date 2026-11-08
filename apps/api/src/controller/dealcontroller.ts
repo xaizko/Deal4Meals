@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express';
+import { Router } from 'express';
 import { pool } from '../db';
 const router = Router();
 interface Deal{
@@ -26,7 +26,7 @@ router.get('/deals', async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT id, user_id, item_name, price, original_price,
-              macros, deal_score, created_at, start_date, expired_at
+              macros, deal_score, net_likes, created_at, start_date, expired_at
        FROM deals
        ORDER BY created_at DESC`
     );

@@ -14,8 +14,10 @@ async function createSchemas() {
 	const query = `
         CREATE TABLE IF NOT EXISTS Users (
           id SERIAL PRIMARY KEY,
-          username VARCHAR(50) UNIQUE NOT NULL,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		  username VARCHAR(50) UNIQUE NOT NULL,
+		  password VARCHAR(255) NOT NULL,
+		  reputation INTEGER DEFAULT 0,
+		  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
 
         DROP TABLE IF EXISTS Deals CASCADE;
@@ -28,6 +30,7 @@ async function createSchemas() {
           original_price DECIMAL(10, 2) NOT NULL,
           macros JSONB,
           deal_score INTEGER,
+		  net_likes INTEGER DEFAULT 0,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           start_date TIMESTAMP NOT NULL,
           expired_at TIMESTAMP NOT NULL
