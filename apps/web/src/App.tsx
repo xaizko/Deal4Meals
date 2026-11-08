@@ -1,5 +1,5 @@
 import './App.css'
-import { Header } from './header_card'
+import { Header } from './components/header_card'
 function App() {
   return (
     <>
