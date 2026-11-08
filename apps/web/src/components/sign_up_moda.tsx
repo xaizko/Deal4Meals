@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { API_URL } from '../api'
 import { BRAND } from '../brand.ts'
 
 export type SignUpCredentials = {
@@ -40,7 +41,7 @@ export function SignUpModa({ open, onClose, onSignUp }: SignUpModaProps) {
     setError('')
 
     try {
-      const res = await fetch('http://localhost:3000/user', {
+      const res = await fetch(`${API_URL}/user`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
