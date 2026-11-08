@@ -91,7 +91,11 @@ router.get('/deals/search', async (req, res) => {
 			[`%${name}%`]
 		);
 
-		res.json(result.rows);
+		res.json(result.rows.map((row) => ({
+			...row,
+			price: parseFloat(row.price),
+			original_price: parseFloat(row.original_price),
+		})));
 	} catch (err) {
 		console.error('Error searching deals by name:', err);
 		res.status(500).json({ error: 'Failed to search deals' });

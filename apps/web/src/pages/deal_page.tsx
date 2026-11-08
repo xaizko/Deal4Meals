@@ -7,7 +7,13 @@ function getPageSize(width: number) {
 			return 6
 }
 
-export function DealPage({ newDeal }: { newDeal: Deal | null }) {
+export function DealPage({
+	newDeal,
+	searchQuery,
+}: {
+	newDeal: Deal | null
+	searchQuery: string
+}) {
 	const [deals, setDeals] = useState<Deal[]>([])
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
@@ -16,25 +22,33 @@ export function DealPage({ newDeal }: { newDeal: Deal | null }) {
 						 typeof window === 'undefined' ? 6 : getPageSize(window.innerWidth),
 						)
 						const [visibleCount, setVisibleCount] = useState(pageSize)
-						// Fetch deals from the API on page entry.
+						// Fetch the full feed or use the API's search endpoint.
 						useEffect(() => {
+							const controller = new AbortController()
 							async function loadDeals() {
 								try {
 									setLoading(true)
 									setError(null)
-									const res = await fetch('http://localhost:3000/deals')
+									const endpoint = searchQuery
+										? `/deals/search?name=${encodeURIComponent(searchQuery)}`
+										: '/deals'
+									const res = await fetch(`http://localhost:3000${endpoint}`, {
+										signal: controller.signal,
+									})
 									if (!res.ok) throw new Error(`HTTP ${res.status}`)
 									const data: Deal[] = await res.json()
 									setDeals(data)
 								} catch (err) {
+									if (err instanceof DOMException && err.name === 'AbortError') return
 									console.error(err)
-									setError('Failed to load deals')
+									setError(searchQuery ? 'Failed to search deals' : 'Failed to load deals')
 								} finally {
-									setLoading(false)
+									if (!controller.signal.aborted) setLoading(false)
 								}
 							}
 							loadDeals()
-						}, [])
+							return () => controller.abort()
+						}, [searchQuery])
 
 						// Responsive page size
 						useEffect(() => {
@@ -53,16 +67,16 @@ export function DealPage({ newDeal }: { newDeal: Deal | null }) {
 						}, [])
 
 						const allDeals = useMemo(
-							() => newDeal
+							() => newDeal && !searchQuery
 								? [newDeal, ...deals.filter((deal) => deal.id !== newDeal.id)]
 								: deals,
-								[deals, newDeal],
+								[deals, newDeal, searchQuery],
 						)
 						const visibleDeals = useMemo(() => allDeals.slice(0, visibleCount), [allDeals, visibleCount])
 
 						const hasMore = visibleCount < allDeals.length
 
-						if (loading && !newDeal) {
+						if (loading && (!newDeal || searchQuery)) {
 							return (
 								<main className="flex-1 bg-zinc-100">
 								<div className="mx-auto max-w-7xl px-4 py-8">
@@ -87,11 +101,15 @@ export function DealPage({ newDeal }: { newDeal: Deal | null }) {
 							<div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
 							{error ? (
 								<p role="status" className="mb-4 text-amber-700">
-								Could not refresh existing deals. The new deal is shown below.
+								{searchQuery
+									? 'Could not complete the search. Showing the most recently loaded deals.'
+									: 'Could not refresh existing deals. The new deal is shown below.'}
 									</p>
 							) : null}
 							{allDeals.length === 0 ? (
-								<p className="text-zinc-500">No deals available right now.</p>
+								<p className="text-zinc-500">
+									{searchQuery ? `No deals found for “${searchQuery}”.` : 'No deals available right now.'}
+								</p>
 							) : (
 							<>
 							<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-8">

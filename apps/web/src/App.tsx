@@ -9,13 +9,17 @@ import { WeeklyPage } from './pages/weekly_page'
 
 function App() {
 	const [newDeal, setNewDeal] = useState<Deal | null>(null)
+	const [searchQuery, setSearchQuery] = useState('')
 
 	return (
 		<BrowserRouter>
 			<div className="flex min-h-screen flex-col bg-zinc-100">
-				<Header onDealCreated={setNewDeal} />
+				<Header onDealCreated={setNewDeal} onSearch={setSearchQuery} />
 				<Routes>
-					<Route path="/" element={<DealPage newDeal={newDeal} />} />
+					<Route
+						path="/"
+						element={<DealPage newDeal={newDeal} searchQuery={searchQuery} />}
+					/>
 					<Route path="/weekly" element={<WeeklyPage />} />
 					<Route path="*" element={<Navigate to="/" replace />} />
 				</Routes>

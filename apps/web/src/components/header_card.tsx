@@ -1,12 +1,12 @@
 import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { BRAND } from '../brand'
 import { PostDealModa, type PostDealForm } from './post_deal_moda'
 import type { Deal } from './deal_card'
 import { ProfileModa } from './profile_moda'
 
 export type HeaderProps = {
-	onSearch?: (query: string) => void
+	onSearch: (query: string) => void
 	onDealCreated: (deal: Deal) => void
 }
 
@@ -17,6 +17,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 export function Header({ onSearch, onDealCreated }: HeaderProps) {
+	const navigate = useNavigate()
 	const [postOpen, setPostOpen] = useState(false)
 	const [profileOpen, setProfileOpen] = useState(false)
 	const [query, setQuery] = useState('')
@@ -24,6 +25,7 @@ export function Header({ onSearch, onDealCreated }: HeaderProps) {
 	function handleSearch(e: FormEvent) {
 		e.preventDefault()
 		onSearch?.(query.trim())
+		navigate('/')
 	}
 
 	async function submitDeal(form: PostDealForm) {
@@ -116,9 +118,13 @@ export function Header({ onSearch, onDealCreated }: HeaderProps) {
 						<label htmlFor="header-search" className="sr-only">
 							Search deals
 						</label>
-						<span className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-zinc-400">
+						<button
+							type="submit"
+							aria-label="Search deals"
+							className="absolute top-1/2 left-2.5 -translate-y-1/2 text-zinc-400"
+						>
 							<SearchIcon className="h-3.5 w-3.5" />
-						</span>
+						</button>
 						<input
 							id="header-search"
 							type="search"
@@ -126,8 +132,8 @@ export function Header({ onSearch, onDealCreated }: HeaderProps) {
 							onChange={(e) => setQuery(e.target.value)}
 							placeholder="Search deals…"
 							className="h-7 w-full rounded-md border-0 bg-white py-1 pr-3 pl-8 text-xs text-zinc-900 outline-none placeholder:text-zinc-400 focus:ring-2 focus:ring-white/60"
-							/>
-					</form>
+						/>
+						</form>
 				</div>
 
 				<div className="flex shrink-0 items-center gap-2">
