@@ -1,58 +1,16 @@
-import { useState } from 'react'
-
 const BRAND = '#066E14'
 
-const DIETARY_OPTIONS = [
-  'Any diet',
-  'Vegetarian',
-  'Vegan',
-  'Gluten-free',
-  'Halal',
-  'Kosher',
-] as const
-
 export function Header() {
-  const [diet, setDiet] = useState<string>('')
-
   return (
     <header className="w-full text-white" style={{ backgroundColor: BRAND }}>
       <div className="flex items-center justify-between gap-3 px-4 py-2.5 sm:px-5">
-        {/* Left: logo + dietary dropdown */}
-        <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
-          <a
-            href="/"
-            className="shrink-0 font-['Caveat_Brush',cursive] text-xl tracking-wide text-white no-underline sm:text-2xl"
-          >
-            DEALS4MEALS
-          </a>
+        <a
+          href="/"
+          className="shrink-0 font-['Caveat_Brush',cursive] text-xl tracking-wide text-white no-underline sm:text-2xl"
+        >
+          DEALS4MEALS
+        </a>
 
-          <label
-            className="relative inline-flex h-7 w-36 shrink-0 items-center rounded-md bg-white sm:w-40"
-            style={{ color: BRAND }}
-          >
-            <span className="pointer-events-none absolute left-2">
-              <LeafIcon className="h-3.5 w-3.5" />
-            </span>
-            <select
-              value={diet}
-              onChange={(e) => setDiet(e.target.value)}
-              aria-label="Select dietary preference"
-              className="h-full w-full appearance-none rounded-md bg-transparent py-1 pr-2 pl-7 text-xs font-medium outline-none"
-              style={{ color: BRAND }}
-            >
-              <option value="" disabled>
-                Select diet
-              </option>
-              {DIETARY_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        {/* Right: actions */}
         <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
@@ -82,14 +40,6 @@ export function Header() {
         </div>
       </div>
     </header>
-  )
-}
-
-function LeafIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
-      <path d="M17 8C8 10 5.9 16.17 3.82 21.67l1.06.33C6.85 17 9 12 17 10v2c0 1.1.9 2 2 2h2V8h-4z" />
-    </svg>
   )
 }
 

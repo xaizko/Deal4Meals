@@ -2,28 +2,34 @@ import type { Deal } from './deal_card'
 
 const BRAND = '#066E14'
 
+export type DealMacros = {
+  kcal?: number
+  protein_g?: number
+  fat_g?: number
+  carbs_g?: number
+  sugar_g?: number
+  sodium_g?: number
+  fiber_g?: number
+}
+
 export type MacroModaProps = {
   deal: Deal
   open: boolean
   onClose: () => void
 }
 
-type MacroValues = {
-  calories?: number
-  protein?: number
-  carbs?: number
-  fat?: number
-}
-
-function readMacros(macros: unknown): MacroValues {
+function readMacros(macros: unknown): DealMacros {
   if (!macros || typeof macros !== 'object') return {}
   const m = macros as Record<string, unknown>
   const num = (v: unknown) => (typeof v === 'number' ? v : undefined)
   return {
-    calories: num(m.calories),
-    protein: num(m.protein),
-    carbs: num(m.carbs),
-    fat: num(m.fat),
+    kcal: num(m.kcal),
+    protein_g: num(m.protein_g),
+    fat_g: num(m.fat_g),
+    carbs_g: num(m.carbs_g),
+    sugar_g: num(m.sugar_g),
+    sodium_g: num(m.sodium_g),
+    fiber_g: num(m.fiber_g),
   }
 }
 
@@ -32,11 +38,14 @@ export function MacroModa({ deal, open, onClose }: MacroModaProps) {
 
   const macros = readMacros(deal.macros)
   const rows = [
-    { label: 'Calories', value: macros.calories, unit: 'kcal' },
-    { label: 'Protein', value: macros.protein, unit: 'g' },
-    { label: 'Carbs', value: macros.carbs, unit: 'g' },
-    { label: 'Fat', value: macros.fat, unit: 'g' },
-  ]
+    { label: 'Calories', key: 'kcal', value: macros.kcal, unit: 'kcal' },
+    { label: 'Protein', key: 'protein_g', value: macros.protein_g, unit: 'g' },
+    { label: 'Fat', key: 'fat_g', value: macros.fat_g, unit: 'g' },
+    { label: 'Carbs', key: 'carbs_g', value: macros.carbs_g, unit: 'g' },
+    { label: 'Sugar', key: 'sugar_g', value: macros.sugar_g, unit: 'g' },
+    { label: 'Sodium', key: 'sodium_g', value: macros.sodium_g, unit: 'g' },
+    { label: 'Fiber', key: 'fiber_g', value: macros.fiber_g, unit: 'g' },
+  ] as const
 
   return (
     <div
@@ -80,7 +89,7 @@ export function MacroModa({ deal, open, onClose }: MacroModaProps) {
           <ul className="mt-2 space-y-2">
             {rows.map((row) => (
               <li
-                key={row.label}
+                key={row.key}
                 className="flex items-center justify-between text-sm text-zinc-800"
               >
                 <span>{row.label}</span>

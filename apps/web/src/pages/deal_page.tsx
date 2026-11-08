@@ -16,7 +16,7 @@ const SAMPLE_DEALS: Deal[] = [
     rating: '4.6',
     start_date: '2026-11-10T11:00:00',
     expired_at: '2026-11-14T14:00:00',
-    macros: { calories: 720, protein: 34, carbs: 58, fat: 32 },
+    macros: { kcal: 720, protein_g: 34, fat_g: 32, carbs_g: 58, sugar_g: 17, sodium_g: 1.7, fiber_g: 6 },
   },
   {
     id: 2,
@@ -30,7 +30,7 @@ const SAMPLE_DEALS: Deal[] = [
     rating: '4.8',
     start_date: '2026-11-09T17:00:00',
     expired_at: '2026-11-16T21:00:00',
-    macros: { calories: 540, protein: 28, carbs: 62, fat: 16 },
+    macros: { kcal: 540, protein_g: 28, fat_g: 16, carbs_g: 62, sugar_g: 19, sodium_g: 1.4, fiber_g: 6 },
   },
   {
     id: 3,
@@ -44,7 +44,7 @@ const SAMPLE_DEALS: Deal[] = [
     rating: '4.3',
     start_date: '2026-11-08T10:00:00',
     expired_at: '2026-11-20T18:00:00',
-    macros: { calories: 410, protein: 22, carbs: 40, fat: 14 },
+    macros: { kcal: 410, protein_g: 22, fat_g: 14, carbs_g: 40, sugar_g: 12, sodium_g: 1.1, fiber_g: 4 },
   },
   {
     id: 4,
@@ -58,7 +58,7 @@ const SAMPLE_DEALS: Deal[] = [
     rating: '4.5',
     start_date: '2026-11-11T16:00:00',
     expired_at: '2026-11-18T22:00:00',
-    macros: { calories: 890, protein: 36, carbs: 98, fat: 38 },
+    macros: { kcal: 890, protein_g: 36, fat_g: 38, carbs_g: 98, sugar_g: 29, sodium_g: 1.8, fiber_g: 10 },
   },
   {
     id: 5,
@@ -72,7 +72,7 @@ const SAMPLE_DEALS: Deal[] = [
     rating: '4.4',
     start_date: '2026-11-11T11:00:00',
     expired_at: '2026-11-11T21:00:00',
-    macros: { calories: 610, protein: 26, carbs: 54, fat: 28 },
+    macros: { kcal: 610, protein_g: 26, fat_g: 28, carbs_g: 54, sugar_g: 16, sodium_g: 1.3, fiber_g: 5 },
   },
   {
     id: 6,
@@ -86,7 +86,7 @@ const SAMPLE_DEALS: Deal[] = [
     rating: '4.2',
     start_date: '2026-11-07T07:00:00',
     expired_at: '2026-11-21T11:00:00',
-    macros: { calories: 480, protein: 18, carbs: 52, fat: 20 },
+    macros: { kcal: 480, protein_g: 18, fat_g: 20, carbs_g: 52, sugar_g: 16, sodium_g: 0.9, fiber_g: 5 },
   },
   {
     id: 7,
@@ -100,7 +100,7 @@ const SAMPLE_DEALS: Deal[] = [
     rating: '4.7',
     start_date: '2026-11-12T12:00:00',
     expired_at: '2026-11-19T21:00:00',
-    macros: { calories: 760, protein: 30, carbs: 88, fat: 24 },
+    macros: { kcal: 760, protein_g: 30, fat_g: 24, carbs_g: 88, sugar_g: 26, sodium_g: 1.5, fiber_g: 9 },
   },
   {
     id: 8,
@@ -114,7 +114,7 @@ const SAMPLE_DEALS: Deal[] = [
     rating: '4.5',
     start_date: '2026-11-08T09:00:00',
     expired_at: '2026-11-22T17:00:00',
-    macros: { calories: 520, protein: 29, carbs: 61, fat: 15 },
+    macros: { kcal: 520, protein_g: 29, fat_g: 15, carbs_g: 61, sugar_g: 18, sodium_g: 1.5, fiber_g: 6 },
   },
   {
     id: 9,
@@ -128,7 +128,7 @@ const SAMPLE_DEALS: Deal[] = [
     rating: '4.1',
     start_date: '2026-11-07T20:00:00',
     expired_at: '2026-11-30T02:00:00',
-    macros: { calories: 830, protein: 42, carbs: 18, fat: 58 },
+    macros: { kcal: 830, protein_g: 42, fat_g: 58, carbs_g: 18, sugar_g: 5, sodium_g: 2.1, fiber_g: 2 },
   },
   {
     id: 10,
@@ -142,7 +142,7 @@ const SAMPLE_DEALS: Deal[] = [
     rating: '4.9',
     start_date: '2026-11-09T11:30:00',
     expired_at: '2026-11-23T20:00:00',
-    macros: { calories: 560, protein: 20, carbs: 70, fat: 18 },
+    macros: { kcal: 560, protein_g: 20, fat_g: 18, carbs_g: 70, sugar_g: 21, sodium_g: 1, fiber_g: 7 },
   },
   {
     id: 11,
@@ -156,7 +156,7 @@ const SAMPLE_DEALS: Deal[] = [
     rating: '4.0',
     start_date: '2026-11-10T10:00:00',
     expired_at: '2026-11-17T16:00:00',
-    macros: { calories: 650, protein: 31, carbs: 55, fat: 29 },
+    macros: { kcal: 650, protein_g: 31, fat_g: 29, carbs_g: 55, sugar_g: 17, sodium_g: 1.6, fiber_g: 6 },
   },
   {
     id: 12,
@@ -170,7 +170,7 @@ const SAMPLE_DEALS: Deal[] = [
     rating: '4.6',
     start_date: '2026-11-13T17:00:00',
     expired_at: '2026-11-13T22:00:00',
-    macros: { calories: 690, protein: 33, carbs: 74, fat: 22 },
+    macros: { kcal: 690, protein_g: 33, fat_g: 22, carbs_g: 74, sugar_g: 22, sodium_g: 1.7, fiber_g: 7 },
   },
 ]
 
