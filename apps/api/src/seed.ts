@@ -1,14 +1,23 @@
 import { Client } from 'pg';
 import dotenv from 'dotenv';
+import bcrypt from 'bcrypt';
 
 dotenv.config();
 
 const client = new Client({
 	connectionString: process.env.DATABASE_URL,
 });
-
+const saltRounds = 10;
 const activeStartDate = new Date();
 const activeExpiredAt = new Date(activeStartDate.getTime() + 7 * 24 * 60 * 60 * 1000); 
+
+const mockUsers = [
+  { username: 'meal_planner_tester', password: 'password123', reputation: 50 },
+  { username: 'chicken_lover', password: 'burritos67', reputation: 120 },
+  { username: 'budget_eater', password: 'savemoney', reputation: 30 },
+  { username: 'gym_bro', password: 'proteinmax', reputation: 200 },
+  { username: 'student_chef', password: 'ramenlife', reputation: 75 },
+];
 
 const mockDeals = [
 	{ name: 'Boneless Skinless Chicken Breast (1lb)', merchant: 'Wegmans', category: 'Meat', location: 'Rochester, NY', image_url: '/icons/meat.svg', price: 2.99, orig: 5.99, score: 95, macros: { protein: 140, carbs: 0, fats: 16, calories: 740 } },
@@ -38,14 +47,29 @@ async function seedDatabase() {
 		await client.connect();
 		console.log('Connected to Tiger Data');
 
-		const userResult = await client.query(`
-						      INSERT INTO Users (username) 
-						      VALUES ('meal_planner_tester') 
-						      ON CONFLICT (username) DO UPDATE SET username = EXCLUDED.username
-						      RETURNING id;
-						      `);
+		const userIds: number[] = [];
 
-						      const userId = userResult.rows[0].id;
+		for (const user of mockUsers) {
+		const hash = await bcrypt.hash(user.password, saltRounds);
+		console.log('Inserting', user.username, 'hash length:', hash.length);
+
+		const result = await client.query(
+			`INSERT INTO users (username, password, reputation)
+			VALUES ($1, $2, $3)
+			ON CONFLICT (username) DO UPDATE
+			SET password = EXCLUDED.password,
+				reputation = EXCLUDED.reputation
+			RETURNING id`,
+			[user.username, hash, user.reputation]
+		);
+
+		userIds.push(result.rows[0].id);
+		}
+
+		console.log(`Seeded ${userIds.length} users`);
+
+		// then use userIds[0] (or whichever you want) for the deals
+const primaryUserId = userIds[0];
 
 						      for (const deal of mockDeals) {
 							      await client.query(
@@ -55,7 +79,7 @@ async function seedDatabase() {
 								      )
 								      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
 								      [
-									      userId, 
+									      userIds[0], 
 									      deal.name,
 									      deal.merchant,
 									      deal.category,

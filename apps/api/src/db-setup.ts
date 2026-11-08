@@ -12,13 +12,13 @@ async function createSchemas() {
 	console.log('Connected to Tiger Data');
 
 	const query = `
-        CREATE TABLE IF NOT EXISTS Users (
-          id SERIAL PRIMARY KEY,
-		  username VARCHAR(50) UNIQUE NOT NULL,
-		  password VARCHAR(255) NOT NULL,
-		  reputation INTEGER DEFAULT 0,
-		  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
+        CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(50) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        reputation INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
 
         DROP TABLE IF EXISTS Deals CASCADE;
         
