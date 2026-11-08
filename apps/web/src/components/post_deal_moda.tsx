@@ -194,11 +194,11 @@ export function PostDealModa({ open, onClose, onSubmit }: PostDealModaProps) {
             <textarea
               required
               rows={3}
-              maxLength={250}
+              maxLength={500}
               value={form.description}
               onChange={(e) => update('description', e.target.value)}
               placeholder="Describe the deal and any conditions"
-              className={`${inputClass} max-h-40 resize-y overflow-y-auto`}
+              className={`${inputClass} resize-none overflow-hidden`}
             />
             <span className="mt-1 block text-right text-xs text-zinc-500">
               {form.description.length}/500
