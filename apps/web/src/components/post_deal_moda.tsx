@@ -6,9 +6,8 @@ import {
 	type FormEvent,
 	type ReactNode,
 } from 'react'
+import { API_URL } from '../api'
 import { BRAND } from '../brand.ts'
-
-const API_URL = 'http://localhost:3000'
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const
 const DIETARY = [
@@ -79,7 +78,7 @@ export type PostDealForm = {
 	startTime: string
 	endTime: string
 	dietary: string[]
-	imageName?: string
+	photos: File[]
 	nutrition: SelectedNutrition | null
 	manualMacros: ManualMacros
 }
@@ -99,12 +98,15 @@ const emptyForm: PostDealForm = {
 	startTime: '',
 	endTime: '',
 	dietary: [],
+	photos: [],
 	nutrition: null,
 	manualMacros: emptyManualMacros,
 }
 
 const inputClass =
 	'w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-[#066E14] focus:ring-1 focus:ring-[#066E14]'
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024
+const MAX_PHOTOS = 5
 
 export function PostDealModa({ open, onClose, onSubmit }: PostDealModaProps) {
 	const [form, setForm] = useState<PostDealForm>(emptyForm)
@@ -644,28 +646,73 @@ export function PostDealModa({ open, onClose, onSubmit }: PostDealModaProps) {
 				
 						<div>
 							<p className="mb-2 text-sm font-semibold text-zinc-900">
-								Deal image <span className="font-normal text-zinc-500">(optional)</span>
+								Deal photos <span className="font-normal text-zinc-500">(optional)</span>
 							</p>
 							<label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-zinc-300 bg-slate-100 px-4 py-4">
 								<ImageIcon className="h-8 w-8 shrink-0" style={{ color: BRAND }} />
 								<div className="min-w-0 flex-1">
 									<p className="text-sm font-medium text-zinc-800">
-										{form.imageName ?? 'Image upload placeholder'}
+										{form.photos.length
+											? `${form.photos.length} photo${form.photos.length === 1 ? '' : 's'} selected`
+											: 'Choose photos to attach'}
 									</p>
-									<p className="text-xs text-zinc-500">JPG or PNG · Up to 5 MB</p>
+									<p className="text-xs text-zinc-500">
+										JPG or PNG · Up to {MAX_PHOTOS} photos, {MAX_PHOTO_BYTES / 1024 / 1024} MB combined
+									</p>
 								</div>
 								<span className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-800">
-									Choose file
+									Choose photos
 								</span>
 								<input
 									type="file"
 									accept="image/png,image/jpeg"
+									multiple
 									className="sr-only"
-									onChange={(e) =>
-										update('imageName', e.target.files?.[0]?.name ?? undefined)
-									}
+									onChange={(e) => {
+										const photos = Array.from(e.target.files ?? [])
+										const validTypes = photos.every(
+											(photo) => photo.type === 'image/png' || photo.type === 'image/jpeg',
+										)
+										const totalBytes = photos.reduce((total, photo) => total + photo.size, 0)
+										if (photos.length > MAX_PHOTOS) {
+											setError(`Choose no more than ${MAX_PHOTOS} photos.`)
+										} else if (!validTypes) {
+											setError('Only JPEG and PNG photos are supported.')
+										} else if (totalBytes > MAX_PHOTO_BYTES) {
+											setError('Selected photos may not exceed 5 MB combined.')
+										} else {
+											setError(null)
+											update('photos', photos)
+										}
+										e.target.value = ''
+									}}
 								/>
 							</label>
+							{form.photos.length > 0 ? (
+								<ul className="mt-2 space-y-1 text-xs text-zinc-600">
+									{form.photos.map((photo, index) => (
+										<li
+											key={`${photo.name}-${photo.lastModified}`}
+											className="flex items-center justify-between gap-2"
+										>
+											<span className="truncate">{photo.name}</span>
+											<button
+												type="button"
+												disabled={submitting}
+												onClick={() =>
+													update(
+														'photos',
+														form.photos.filter((_, photoIndex) => photoIndex !== index),
+													)
+												}
+												className="shrink-0 text-red-700 underline disabled:opacity-50"
+											>
+												Remove
+											</button>
+										</li>
+									))}
+								</ul>
+							) : null}
 						</div>
 
 						{error ? (

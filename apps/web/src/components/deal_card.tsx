@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { getApiResourceUrl } from '../api'
 import { BRAND } from '../brand'
 import { MacroModa } from './macro_moda'
 import { API_URL } from '../api'
@@ -22,6 +23,7 @@ export type Deal = {
 	deal_url?: string
 	valid_days?: string[]
 	dietary_restrictions?: string[]
+	photos?: string[]
 	distance_mi?: number
 	rating?: string
 	net_likes?: number
@@ -217,7 +219,7 @@ export function DealCard({ deal, onViewDetails, onLike, onDislike }: DealCardPro
 		<article className="flex flex-col overflow-hidden rounded-xl border border-zinc-300 bg-white shadow-sm">
 			<div className="flex h-40 items-center justify-center bg-zinc-200 text-sm text-zinc-500 sm:h-44">
 				{deal.image_url ? (
-				<img src={deal.image_url} alt="" className="h-full w-full object-cover" />) 
+				<img src={getApiResourceUrl(deal.image_url)} alt={`${deal.item_name} deal`} className="h-full w-full object-cover" />)
 					: ('Image placeholder')}
 			</div>
 

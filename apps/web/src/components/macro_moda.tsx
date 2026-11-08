@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { BRAND } from '../brand.ts'
 import type { Deal } from './deal_card'
-import { API_URL } from '../api'
+import { API_URL, getApiResourceUrl } from '../api'
 
 export type DealMacros = {
 	kcal?: number
@@ -92,6 +92,7 @@ function readMacros(macros: unknown): DealMacros {
 
 export function MacroModa({ deal, open, onClose }: MacroModaProps) {
 	const [macros, setMacros] = useState<DealMacros>(() => readMacros(deal.macros))
+	const [photos, setPhotos] = useState<string[]>(deal.photos ?? (deal.image_url ? [deal.image_url] : []))
 	const [loading, setLoading] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 
@@ -100,6 +101,7 @@ export function MacroModa({ deal, open, onClose }: MacroModaProps) {
 
 		const controller = new AbortController()
 		setMacros(readMacros(deal.macros))
+		setPhotos(deal.photos ?? (deal.image_url ? [deal.image_url] : []))
 		setLoading(true)
 		setError(null)
 
@@ -117,6 +119,9 @@ export function MacroModa({ deal, open, onClose }: MacroModaProps) {
 					throw new Error(message)
 				}
 				setMacros(readMacros(isRecord(payload) ? payload.macros : undefined))
+				if (isRecord(payload) && Array.isArray(payload.photos)) {
+					setPhotos(payload.photos.filter((photo): photo is string => typeof photo === 'string'))
+				}
 			} catch (err) {
 				if (err instanceof DOMException && err.name === 'AbortError') return
 				setError(err instanceof Error ? err.message : 'Could not load macro data.')
@@ -127,7 +132,7 @@ export function MacroModa({ deal, open, onClose }: MacroModaProps) {
 
 		void loadDeal()
 		return () => controller.abort()
-	}, [open, deal.id, deal.macros])
+	}, [open, deal.id, deal.macros, deal.image_url, deal.photos])
 
 	if (!open) return null
 
@@ -152,10 +157,22 @@ export function MacroModa({ deal, open, onClose }: MacroModaProps) {
 					role="dialog"
 					aria-modal="true"
 					aria-labelledby="macro-moda-title"
-					className="w-full max-w-md rounded-xl border border-zinc-200 bg-white p-5 shadow-lg"
+					className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl border border-zinc-200 bg-white p-5 shadow-lg"
 					onClick={(e) => e.stopPropagation()}
 				>
-					<div className="mb-4 flex items-start justify-between gap-3">
+				{photos.length > 0 ? (
+					<div className="mb-4 grid grid-cols-2 gap-2">
+						{photos.map((photo, index) => (
+							<img
+								key={`${photo}-${index}`}
+								src={getApiResourceUrl(photo)}
+								alt={`${deal.item_name} photo ${index + 1}`}
+								className="max-h-56 w-full rounded-lg object-cover"
+							/>
+						))}
+					</div>
+				) : null}
+				<div className="mb-4 flex items-start justify-between gap-3">
 						<div>
 							<p className="text-sm font-semibold" style={{ color: BRAND }}>
 								Deal details

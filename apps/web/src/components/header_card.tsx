@@ -15,6 +15,20 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === 'object' && value !== null
 }
 
+async function encodePhoto(file: File) {
+	const bytes = new Uint8Array(await file.arrayBuffer())
+	let binary = ''
+	const chunkSize = 0x8000
+	for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+		binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize))
+	}
+	return {
+		file_name: file.name,
+		content_type: file.type,
+		data: btoa(binary),
+	}
+}
+
 export function Header({ onSearch, onDealCreated }: HeaderProps) {
 	const navigate = useNavigate()
 	const [postOpen, setPostOpen] = useState(false)
@@ -67,11 +81,13 @@ export function Header({ onSearch, onDealCreated }: HeaderProps) {
 			)
 		}
 
+		const photos = await Promise.all(form.photos.map(encodePhoto))
 		const response = await fetch(`${API_URL}/deals`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
 				...dealFields,
+				photos,
 				location: form.location.trim(),
 				price,
 				original_price: originalPrice,

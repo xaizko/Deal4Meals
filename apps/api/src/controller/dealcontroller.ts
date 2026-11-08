@@ -34,6 +34,11 @@ interface CreateDealBody {
 	valid_days?: string[];
 	dietary_restrictions?: string[];
 	macros?: unknown;
+	photos?: Array<{
+		file_name: string;
+		content_type: string;
+		data: string;
+	}>;
 	deal_score?: number | null;
 	start_date: string;
 	expired_at: string;
@@ -43,6 +48,65 @@ const DEAL_COLUMNS = `id, user_id, item_name, merchant, category, location,
 	description, deal_url, valid_days, dietary_restrictions, image_url,
 price, original_price, macros, deal_score, net_likes, created_at,
 start_date, expired_at`;
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+const MAX_PHOTOS_PER_DEAL = 5;
+
+function isValidPhotoContent(data: Buffer, contentType: string) {
+	if (contentType === 'image/png') {
+		return data.length >= 8 && data.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
+	}
+	if (contentType === 'image/jpeg') {
+		return data.length >= 3 && data[0] === 0xff && data[1] === 0xd8 && data[2] === 0xff
+	}
+	return false
+}
+
+router.get('/deals/:dealId/photos/:photoId', async (req, res) => {
+	const dealId = Number(req.params.dealId)
+	const photoId = Number(req.params.photoId)
+	if (!Number.isInteger(dealId) || dealId <= 0 || !Number.isInteger(photoId) || photoId <= 0) {
+		return res.status(400).json({ error: 'Invalid deal or photo id' })
+	}
+
+	try {
+		const result = await pool.query(
+			`SELECT content_type, image_data
+			 FROM deal_photos
+			 WHERE deal_id = $1 AND id = $2`,
+			[dealId, photoId],
+		)
+		if (result.rows.length === 0) return res.status(404).json({ error: 'Deal photo not found' })
+
+		res.setHeader('Content-Type', result.rows[0].content_type)
+		res.setHeader('Cache-Control', 'public, max-age=86400')
+		return res.send(result.rows[0].image_data)
+	} catch (error) {
+		console.error('Error fetching deal photo:', error)
+		return res.status(500).json({ error: 'Failed to fetch deal photo' })
+	}
+})
+
+router.get('/deals/:dealId/photos', async (req, res) => {
+	const dealId = Number(req.params.dealId)
+	if (!Number.isInteger(dealId) || dealId <= 0) {
+		return res.status(400).json({ error: 'Invalid deal id' })
+	}
+
+	try {
+		const result = await pool.query(
+			`SELECT id FROM deal_photos WHERE deal_id = $1 ORDER BY id`,
+			[dealId],
+		)
+		return res.json(
+			result.rows.map((row) => ({
+				url: `/deals/${dealId}/photos/${row.id}`,
+			})),
+		)
+	} catch (error) {
+		console.error('Error listing deal photos:', error)
+		return res.status(500).json({ error: 'Failed to list deal photos' })
+	}
+})
 
 router.patch('/deals/:id/net_likes/:value', async (req, res) => {
 	const id = parseInt(req.params.id, 10);
@@ -116,7 +180,17 @@ router.get('/deals/:id', async (req, res) => {
 			ORDER BY created_at DESC`,
 			[id]
 		);
-		res.json(result.rows[0]);
+		if (result.rows.length === 0) {
+			return res.status(404).json({ error: 'Deal not found' });
+		}
+		const photos = await pool.query(
+			`SELECT id FROM deal_photos WHERE deal_id = $1 ORDER BY id`,
+			[id],
+		);
+		res.json({
+			...result.rows[0],
+			photos: photos.rows.map((photo) => `/deals/${id}/photos/${photo.id}`),
+		});
 	}
 	catch(err){
 		console.error('Error fetching deal by id', err);
@@ -218,6 +292,47 @@ Date.parse(body.expired_at) < Date.parse(body.start_date)
 	) {
 		return res.status(400).json({ error: 'dietary_restrictions must be an array of strings' });
 	}
+	if (
+		body.photos !== undefined &&
+		(!Array.isArray(body.photos) ||
+			body.photos.length > MAX_PHOTOS_PER_DEAL ||
+			!body.photos.every((photo) =>
+				photo !== null &&
+				typeof photo === 'object' &&
+				typeof photo.file_name === 'string' &&
+				typeof photo.content_type === 'string' &&
+				typeof photo.data === 'string'
+			))
+	) {
+		return res.status(400).json({ error: `photos must contain at most ${MAX_PHOTOS_PER_DEAL} valid image uploads` });
+	}
+
+	const photos: Array<{ fileName: string; contentType: string; data: Buffer }> = [];
+	let totalPhotoBytes = 0;
+	for (const photo of body.photos ?? []) {
+		if (!photo.file_name.trim() || photo.file_name.length > 255) {
+			return res.status(400).json({ error: 'Each photo needs a valid file name' });
+		}
+		if (!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(photo.data)) {
+			return res.status(400).json({ error: 'A photo contains invalid base64 data' });
+		}
+		const data = Buffer.from(photo.data, 'base64');
+		if (data.toString('base64') !== photo.data) {
+			return res.status(400).json({ error: 'A photo contains invalid base64 data' });
+		}
+		if (!isValidPhotoContent(data, photo.content_type)) {
+			return res.status(400).json({ error: 'Only valid JPEG and PNG photos are supported' });
+		}
+		totalPhotoBytes += data.length;
+		if (totalPhotoBytes > MAX_PHOTO_BYTES) {
+			return res.status(400).json({ error: 'Photos may not exceed 5 MB combined' });
+		}
+		photos.push({
+			fileName: photo.file_name.trim(),
+			contentType: photo.content_type,
+			data,
+		});
+	}
 
 	let dealUrl: string | null = null;
 	if (typeof body.deal_url === 'string' && body.deal_url.trim() !== '') {
@@ -232,8 +347,19 @@ Date.parse(body.expired_at) < Date.parse(body.start_date)
 		}
 	}
 
+	const client = await pool.connect().catch((error: unknown) => {
+		console.error('Error connecting to create deal:', error);
+		return null;
+	});
+	if (!client) {
+		return res.status(500).json({ error: 'Failed to create deal' });
+	}
+
+	let transactionStarted = false;
 	try {
-		const result = await pool.query(
+		await client.query('BEGIN');
+		transactionStarted = true;
+		const result = await client.query(
 			`INSERT INTO deals (
 				user_id, item_name, merchant, category, location, image_url,
 				price, original_price, description, deal_url, valid_days,
@@ -265,10 +391,34 @@ Date.parse(body.expired_at) < Date.parse(body.start_date)
 		deal.price = parseFloat(deal.price);
 		deal.original_price = parseFloat(deal.original_price);
 
-		return res.status(201).json(deal);
+		const storedPhotos: Array<{ id: number; url: string }> = [];
+		for (const photo of photos) {
+			const photoResult = await client.query(
+				`INSERT INTO deal_photos (deal_id, file_name, content_type, image_data)
+				 VALUES ($1, $2, $3, $4)
+				 RETURNING id`,
+				[deal.id, photo.fileName, photo.contentType, photo.data],
+			)
+			const id = photoResult.rows[0].id as number
+			storedPhotos.push({ id, url: `/deals/${deal.id}/photos/${id}` })
+		}
+
+		if (storedPhotos[0]) {
+			deal.image_url = storedPhotos[0].url
+			await client.query(
+				'UPDATE deals SET image_url = $1 WHERE id = $2',
+				[deal.image_url, deal.id],
+			);
+		}
+		await client.query('COMMIT')
+		transactionStarted = false;
+		return res.status(201).json({ ...deal, photos: storedPhotos.map(({ url }) => url) })
 	} catch (err) {
+		if (client && transactionStarted) await client.query('ROLLBACK')
 		console.error('Error creating deal:', err);
 		return res.status(500).json({ error: 'Failed to create deal' });
+	} finally {
+		client?.release()
 	}
 });
 
