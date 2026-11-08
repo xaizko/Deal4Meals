@@ -101,7 +101,7 @@ export function PostDealModa({ open, onClose, onSubmit }: PostDealModaProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="post-deal-title"
-        className="my-4 w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl sm:p-6"
+        className="mt-10 w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl sm:p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-start justify-between gap-3">
