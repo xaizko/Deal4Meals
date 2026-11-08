@@ -18,11 +18,21 @@ export default defineConfig(({ mode }) => {
     rootEnv.API_URL ||
     webEnv.VITE_API_URL ||
     'http://localhost:3000'
+  const normalizedApiUrl = apiUrl.replace(/\/+$/, '')
+  const parsedApiUrl = new URL(normalizedApiUrl)
+  const isLocalApi =
+    parsedApiUrl.hostname === 'localhost' ||
+    parsedApiUrl.hostname === '127.0.0.1' ||
+    parsedApiUrl.hostname === '::1'
+  const apiBaseUrl =
+    !isLocalApi && parsedApiUrl.pathname === '/'
+      ? `${normalizedApiUrl}/api`
+      : normalizedApiUrl
 
   return {
     plugins: [react(), tailwindcss()],
     define: {
-      'import.meta.env.VITE_API_URL': JSON.stringify(apiUrl.replace(/\/+$/, '')),
+      'import.meta.env.VITE_API_URL': JSON.stringify(apiBaseUrl),
     },
   }
 })
