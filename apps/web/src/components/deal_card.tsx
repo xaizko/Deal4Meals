@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { BRAND } from '../brand'
 import { MacroModa } from './macro_moda'
+import { API_URL } from '../api'
 
 // Deals table in apps/api/src/db-setup.ts
 export type Deal = {
@@ -23,6 +24,7 @@ export type Deal = {
 	dietary_restrictions?: string[]
 	distance_mi?: number
 	rating?: string
+	net_likes?: number
 	image_url?: string
 }
 
@@ -35,6 +37,29 @@ export type DealCardProps = {
 
 function formatMoney(amount: number) {
 	return `$${amount.toFixed(2)}`
+}
+
+function readRating(value: unknown): number {
+	if (typeof value === 'number' && Number.isFinite(value)) return value
+	if (typeof value === 'string' && value.trim() !== '') {
+		const amount = Number(value)
+		if (Number.isFinite(amount)) return amount
+	}
+	return 0
+}
+
+function voteDelta(
+	current: 'like' | 'dislike' | null,
+	next: 'like' | 'dislike',
+): { value: number; reaction: 'like' | 'dislike' | null } {
+	if (next === 'like') {
+		if (current === 'like') return { value: -1, reaction: null }
+		if (current === 'dislike') return { value: 2, reaction: 'like' }
+		return { value: 1, reaction: 'like' }
+	}
+	if (current === 'dislike') return { value: 1, reaction: null }
+	if (current === 'like') return { value: -2, reaction: 'dislike' }
+	return { value: -1, reaction: 'dislike' }
 }
 
 function formatDaysTime(deal: Deal) {
@@ -115,21 +140,52 @@ function DealExpiry({ expiredAt }: { expiredAt?: string }) {
 export function DealCard({ deal, onViewDetails, onLike, onDislike }: DealCardProps) {
 	const [macroOpen, setMacroOpen] = useState(false)
 	const [reaction, setReaction] = useState<'like' | 'dislike' | null>(null)
+	const [rating, setRating] = useState(() => readRating(deal.net_likes))
+	const [voting, setVoting] = useState(false)
 	const saved = Math.max(0, deal.original_price - deal.price)
+
+	useEffect(() => {
+		setRating(readRating(deal.net_likes))
+	}, [deal.id, deal.net_likes])
 
 	function handleViewDetails() {
 		setMacroOpen(true)
 		onViewDetails?.(deal)
 	}
 
-	function handleLike() {
-		setReaction((prev) => (prev === 'like' ? null : 'like'))
-		onLike?.(deal)
-	}
-
-	function handleDislike() {
-		setReaction((prev) => (prev === 'dislike' ? null : 'dislike'))
-		onDislike?.(deal)
+	async function castVote(next: 'like' | 'dislike') {
+		if (voting) return
+		const { value, reaction: nextReaction } = voteDelta(reaction, next)
+		setVoting(true)
+		try {
+			const response = await fetch(`${API_URL}/deals/${deal.id}/net_likes/${value}`, {
+				method: 'PATCH',
+			})
+			const payload: unknown = await response.json()
+			if (!response.ok) {
+				const message =
+					typeof payload === 'object' &&
+					payload !== null &&
+					'error' in payload &&
+					typeof payload.error === 'string'
+						? payload.error
+						: 'Could not update the rating.'
+				throw new Error(message)
+			}
+			const nextRating =
+				typeof payload === 'object' && payload !== null && 'net_likes' in payload
+					? readRating(payload.net_likes)
+					: rating + value
+			setRating(nextRating)
+			setReaction(nextReaction)
+			const updated = { ...deal, net_likes: nextRating }
+			if (next === 'like') onLike?.(updated)
+			else onDislike?.(updated)
+		} catch (err) {
+			console.error(err)
+		} finally {
+			setVoting(false)
+		}
 	}
 
 	return (
@@ -195,17 +251,22 @@ export function DealCard({ deal, onViewDetails, onLike, onDislike }: DealCardPro
 							View deal details
 					</button>
 
-					<span className="inline-flex items-center gap-1 text-xs text-zinc-600">
-						<StarIcon className="h-3.5 w-3.5" />
-						{deal.rating ?? 'Placeholder rating'}
+					<span
+						className={`inline-flex items-center gap-1 text-xs font-semibold ${
+							rating < 0 ? 'text-red-600' : 'text-zinc-700'
+						}`}
+					>
+						<ThumbsUpIcon className="h-3.5 w-3.5" />
+						{rating}
 					</span>
 
 					<div className="ml-auto flex gap-1.5">
 						<button
 							type="button"
-							onClick={handleLike}
+							onClick={() => void castVote('like')}
+							disabled={voting}
 							aria-pressed={reaction === 'like'}
-							className={`rounded-md border px-2.5 py-1 text-xs font-medium transition ${
+							className={`rounded-md border px-2.5 py-1 text-xs font-medium transition disabled:opacity-50 ${
 								reaction === 'like'
 									? 'border-transparent text-white'
 									: 'border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-50'
@@ -219,9 +280,10 @@ export function DealCard({ deal, onViewDetails, onLike, onDislike }: DealCardPro
 
 						<button
 							type="button"
-							onClick={handleDislike}
+							onClick={() => void castVote('dislike')}
+							disabled={voting}
 							aria-pressed={reaction === 'dislike'}
-							className={`rounded-md border px-2.5 py-1 text-xs font-medium transition ${
+							className={`rounded-md border px-2.5 py-1 text-xs font-medium transition disabled:opacity-50 ${
 								reaction === 'dislike'
 									? 'border-red-600 bg-red-600 text-white'
 									: 'border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-50'
@@ -260,13 +322,13 @@ function PinIcon({ className }: { className?: string }) {
 	)
 }
 
-function StarIcon({ className }: { className?: string }) {
+function ThumbsUpIcon({ className }: { className?: string }) {
 	return (
 		<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
 		<path
 		strokeLinecap="round"
 		strokeLinejoin="round"
-		d="M12 3l2.9 5.88 6.49.94-4.7 4.58 1.11 6.47L12 17.77l-5.8 3.1 1.11-6.47-4.7-4.58 6.49-.94L12 3z"
+		d="M7 11v9H4a1 1 0 01-1-1v-7a1 1 0 011-1h3zm0 0l3.2-6.2A2 2 0 0112 3.8V8h6.2a2 2 0 011.9 2.6l-1.4 6.2A2 2 0 0116.8 18H7"
 		/>
 		</svg>
 	)
