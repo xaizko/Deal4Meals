@@ -30,18 +30,51 @@ export function Header({ onSearch, onDealCreated }: HeaderProps) {
 	async function submitDeal(form: PostDealForm) {
 		const price = Number(form.price)
 		const originalPrice = Number(form.originalPrice)
+		const dealFields = {
+			item_name: form.title.trim(),
+			merchant: form.merchant.trim(),
+			category: form.category.trim(),
+			description: form.description.trim(),
+			deal_url: form.dealUrl.trim() || null,
+		}
+
+		const validationResponse = await fetch(`${API_URL}/deals/validate`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(dealFields),
+		})
+		const validationPayload: unknown = await validationResponse.json()
+		if (!validationResponse.ok) {
+			const message =
+				isRecord(validationPayload) && typeof validationPayload.error === 'string'
+					? validationPayload.error
+					: `Could not validate deal (HTTP ${validationResponse.status}).`
+			throw new Error(message)
+		}
+		if (
+			!isRecord(validationPayload) ||
+			typeof validationPayload.valid !== 'boolean' ||
+			!Array.isArray(validationPayload.issues) ||
+			!validationPayload.issues.every((issue) => typeof issue === 'string')
+		) {
+			throw new Error('The server returned an invalid validation response.')
+		}
+		if (!validationPayload.valid) {
+			throw new Error(
+				validationPayload.issues.length > 0
+					? `Please revise this deal: ${validationPayload.issues.join(' ')}`
+					: 'Please revise this deal before posting.',
+			)
+		}
+
 		const response = await fetch(`${API_URL}/deals`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
-				item_name: form.title.trim(),
-				merchant: form.merchant.trim(),
-				category: form.category.trim(),
+				...dealFields,
 				location: form.location.trim(),
 				price,
 				original_price: originalPrice,
-				description: form.description.trim(),
-				deal_url: form.dealUrl.trim() || null,
 				valid_days: form.validDays,
 				dietary_restrictions: form.dietary,
 				macros: form.nutrition
