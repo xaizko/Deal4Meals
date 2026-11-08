@@ -1,4 +1,4 @@
-import { BRAND } from '../brand'
+import { BRAND } from '../brand.ts'
 import type { Deal } from './deal_card'
 
 export type DealMacros = {

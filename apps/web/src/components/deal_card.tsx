@@ -53,13 +53,80 @@ function formatLocation(deal: Deal) {
   return deal.location ?? 'Placeholder location'
 }
 
+function DealExpiry({ expiredAt }: { expiredAt?: string }) {
+  if (!expiredAt) {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-2.5 py-1 text-xs text-zinc-600">
+        <ClockIcon className="h-3.5 w-3.5 shrink-0" />
+        Expiry unknown
+      </span>
+    )
+  }
+
+  const end = new Date(expiredAt)
+  if (Number.isNaN(end.getTime())) {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-2.5 py-1 text-xs text-zinc-600">
+        <ClockIcon className="h-3.5 w-3.5 shrink-0" />
+        Expiry unknown
+      </span>
+    )
+  }
+
+  const now = Date.now()
+  const diffMs = end.getTime() - now
+  const dateLabel = new Intl.DateTimeFormat(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(end)
+
+  if (diffMs <= 0) {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-700">
+        <ClockIcon className="h-3.5 w-3.5 shrink-0" />
+        Expired {dateLabel}
+      </span>
+    )
+  }
+
+  const diffHours = Math.ceil(diffMs / (1000 * 60 * 60))
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+  const relative =
+    diffHours < 24
+      ? `Expires in ${diffHours} hour${diffHours === 1 ? '' : 's'}`
+      : `Expires in ${diffDays} day${diffDays === 1 ? '' : 's'}`
+
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium text-white"
+      style={{ backgroundColor: BRAND }}
+      title={dateLabel}
+    >
+      <ClockIcon className="h-3.5 w-3.5 shrink-0" />
+      {relative}
+    </span>
+  )
+}
+
 export function DealCard({ deal, onViewDetails, onLike, onDislike }: DealCardProps) {
   const [macroOpen, setMacroOpen] = useState(false)
+  const [reaction, setReaction] = useState<'like' | 'dislike' | null>(null)
   const saved = Math.max(0, deal.original_price - deal.price)
 
   function handleViewDetails() {
     setMacroOpen(true)
     onViewDetails?.(deal)
+  }
+
+  function handleLike() {
+    setReaction((prev) => (prev === 'like' ? null : 'like'))
+    onLike?.(deal)
+  }
+
+  function handleDislike() {
+    setReaction((prev) => (prev === 'dislike' ? null : 'dislike'))
+    onDislike?.(deal)
   }
 
   return (
@@ -109,6 +176,7 @@ export function DealCard({ deal, onViewDetails, onLike, onDislike }: DealCardPro
             <PinIcon className="h-3.5 w-3.5 shrink-0" />
             {formatLocation(deal)}
           </span>
+          <DealExpiry expiredAt={deal.expired_at} />
         </div>
 
         <div className="mt-auto flex flex-wrap items-center gap-2 pt-1">
@@ -129,15 +197,28 @@ export function DealCard({ deal, onViewDetails, onLike, onDislike }: DealCardPro
           <div className="ml-auto flex gap-1.5">
             <button
               type="button"
-              onClick={() => onLike?.(deal)}
-              className="rounded-md border border-zinc-300 bg-white px-2.5 py-1 text-xs font-medium text-zinc-800 hover:bg-zinc-50"
+              onClick={handleLike}
+              aria-pressed={reaction === 'like'}
+              className={`rounded-md border px-2.5 py-1 text-xs font-medium transition ${
+                reaction === 'like'
+                  ? 'border-transparent text-white'
+                  : 'border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-50'
+              }`}
+              style={
+                reaction === 'like' ? { backgroundColor: BRAND } : undefined
+              }
             >
               Like
             </button>
             <button
               type="button"
-              onClick={() => onDislike?.(deal)}
-              className="rounded-md border border-zinc-300 bg-white px-2.5 py-1 text-xs font-medium text-zinc-800 hover:bg-zinc-50"
+              onClick={handleDislike}
+              aria-pressed={reaction === 'dislike'}
+              className={`rounded-md border px-2.5 py-1 text-xs font-medium transition ${
+                reaction === 'dislike'
+                  ? 'border-red-600 bg-red-600 text-white'
+                  : 'border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-50'
+              }`}
             >
               Dislike
             </button>

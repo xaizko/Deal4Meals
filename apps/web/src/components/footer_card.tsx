@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { BRAND } from '../brand'
+import { BRAND } from '../brand.ts'
 
 export function Footer() {
   return (
