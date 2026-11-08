@@ -13,7 +13,7 @@ async function setupDatabase() {
 
 	await client.query('BEGIN');
 	try {
-		await client.query('DROP TABLE IF EXISTS mealplans, deals, users CASCADE');
+		await client.query('DROP TABLE IF EXISTS deal_photos, mealplans, deals, users CASCADE');
 
 		await client.query(`
 				   CREATE TABLE users (
@@ -46,6 +46,17 @@ async function setupDatabase() {
 				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 				start_date TIMESTAMP NOT NULL,
 				expired_at TIMESTAMP NOT NULL
+			)
+		`);
+
+		await client.query(`
+			CREATE TABLE deal_photos (
+				id SERIAL PRIMARY KEY,
+				deal_id INTEGER NOT NULL REFERENCES deals(id) ON DELETE CASCADE,
+				file_name VARCHAR(255) NOT NULL,
+				content_type VARCHAR(50) NOT NULL,
+				image_data BYTEA NOT NULL,
+				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 			)
 		`);
 
