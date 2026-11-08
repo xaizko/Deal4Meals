@@ -118,12 +118,14 @@ export function PostDealModa({ open, onClose, onSubmit }: PostDealModaProps) {
 	const [servings, setServings] = useState<NutritionServing[]>([])
 	const [servingsLoading, setServingsLoading] = useState(false)
 	const [servingsError, setServingsError] = useState<string | null>(null)
+	const [foodName, setFoodName] = useState('')
+	const [manualSelected, setManualSelected] = useState(false)
 	const nutritionRequest = useRef(0)
 
 	useEffect(() => {
 		if (!open) return
 
-		const name = form.title.trim()
+		const name = foodName.trim()
 		if (name.length < 2) {
 			setFoods([])
 			setFoodsError(null)
@@ -158,7 +160,7 @@ export function PostDealModa({ open, onClose, onSubmit }: PostDealModaProps) {
 			controller.abort()
 			window.clearTimeout(timer)
 		}
-	}, [open, form.title])
+	}, [open, foodName])
 
 	if (!open) return null
 
@@ -166,33 +168,46 @@ export function PostDealModa({ open, onClose, onSubmit }: PostDealModaProps) {
 			setForm((prev) => ({ ...prev, [key]: value }))
 		}
 
-		function updateTitle(value: string) {
+		function updateFoodName(value: string) {
 			nutritionRequest.current += 1
-			setForm((prev) => ({
-				...prev,
-				title: value,
-				nutrition: null,
-				manualMacros: emptyManualMacros,
-			}))
+			setFoodName(value)
 			setFoods([])
 			setFoodsError(null)
 			setFoodsLoading(value.trim().length >= 2)
+			if (manualSelected) return
+			update('nutrition', null)
+			setServings([])
+			setServingsError(null)
+			setServingsLoading(false)
+		}
+
+		function clearServings() {
 			setServings([])
 			setServingsError(null)
 			setServingsLoading(false)
 		}
 
 		async function selectFood(fdcIdValue: string) {
+			if (fdcIdValue === 'manual') {
+				nutritionRequest.current += 1
+				setManualSelected(true)
+				update('nutrition', null)
+				clearServings()
+				return
+			}
+
 			const fdcId = Number(fdcIdValue)
 			const food = foods.find((match) => match.fdcId === fdcId)
 			if (!food) {
 				nutritionRequest.current += 1
+				setManualSelected(false)
 				update('nutrition', null)
-				setServings([])
-				setServingsError(null)
-				setServingsLoading(false)
+				update('manualMacros', emptyManualMacros)
+				clearServings()
 				return
 			}
+			setManualSelected(false)
+			update('manualMacros', emptyManualMacros)
 
 			const request = ++nutritionRequest.current
 			setServingsLoading(true)
@@ -261,17 +276,12 @@ export function PostDealModa({ open, onClose, onSubmit }: PostDealModaProps) {
 			e.preventDefault()
 			setSubmitting(true)
 			setError(null)
-			if (foodsLoading || servingsLoading) {
+			if (servingsLoading) {
 				setError('Still looking up nutrition options.')
 				setSubmitting(false)
 				return
 			}
-			if (foods.length > 0 && !form.nutrition) {
-				setError('Select a nutrition option for this deal.')
-				setSubmitting(false)
-				return
-			}
-			if (foods.length === 0 && !manualMacrosAreValid(form.manualMacros)) {
+			if (manualSelected && !manualMacrosAreValid(form.manualMacros)) {
 				setError('Macro values must be zero or greater, or left blank.')
 				setSubmitting(false)
 				return
@@ -279,6 +289,8 @@ export function PostDealModa({ open, onClose, onSubmit }: PostDealModaProps) {
 			try {
 				await onSubmit(form)
 				setForm(emptyForm)
+				setFoodName('')
+				setManualSelected(false)
 				setFoods([])
 				setServings([])
 				setFoodsError(null)
@@ -291,8 +303,8 @@ export function PostDealModa({ open, onClose, onSubmit }: PostDealModaProps) {
 			}
 		}
 
-		const noFoodMatches =
-			!foodsLoading && form.title.trim().length >= 2 && foods.length === 0
+		const searched = foodName.trim().length >= 2 && !foodsLoading
+		const nutritionValue = manualSelected ? 'manual' : (form.nutrition?.fdcId ?? '')
 
 		return (
 			<div
@@ -334,7 +346,7 @@ export function PostDealModa({ open, onClose, onSubmit }: PostDealModaProps) {
 							<input
 								required
 								value={form.title}
-								onChange={(e) => updateTitle(e.target.value)}
+								onChange={(e) => update('title', e.target.value)}
 								placeholder="Placeholder deal title"
 								className={inputClass}
 							/>
@@ -343,26 +355,30 @@ export function PostDealModa({ open, onClose, onSubmit }: PostDealModaProps) {
 						<div>
 							<p className="text-sm font-semibold text-zinc-900">Nutrition</p>
 							<p className="mb-2 text-xs text-zinc-500">
-								{noFoodMatches
-									? 'No nutrition matches for this title. Enter macros yourself, or leave them blank.'
-									: 'Matches come from the deal title. Pick the closest food, then the serving size.'}
+								Search a food name, then pick a match or enter macros yourself.
 							</p>
+							<Field label="Food name">
+								<input
+									value={foodName}
+									onChange={(e) => updateFoodName(e.target.value)}
+									placeholder="e.g. chicken burrito"
+									className={inputClass}
+								/>
+							</Field>
 							<select
-								value={form.nutrition?.fdcId ?? ''}
+								value={nutritionValue}
 								onChange={(e) => void selectFood(e.target.value)}
-								disabled={foodsLoading || foods.length === 0}
-								className={inputClass}
+								className={`${inputClass} mt-2`}
 								aria-label="Nutrition food match"
 							>
 								<option value="">
 									{foodsLoading
 										? 'Looking up foods…'
-										: noFoodMatches
+										: searched && foods.length === 0
 											? 'No nutrition matches'
-											: foods.length === 0
-												? 'Type a deal title to see nutrition matches'
-												: 'Select a food match'}
+											: 'Select a nutrition match'}
 								</option>
+								<option value="manual">Enter macros manually</option>
 								{foods.map((food) => (
 									<option key={food.fdcId} value={food.fdcId}>
 										{food.description}
@@ -375,7 +391,7 @@ export function PostDealModa({ open, onClose, onSubmit }: PostDealModaProps) {
 								</p>
 							) : null}
 
-							{noFoodMatches ? (
+							{manualSelected ? (
 								<div className="mt-2 grid grid-cols-2 gap-3">
 									<Field label="Calories (optional)">
 										<input
@@ -430,7 +446,7 @@ export function PostDealModa({ open, onClose, onSubmit }: PostDealModaProps) {
 										disabled={servingsLoading || servings.length === 0}
 										className={`${inputClass} mt-2`}
 										aria-label="Nutrition serving"
-										required={foods.length > 0}
+										required={form.nutrition != null}
 									>
 										<option value="">
 											{servingsLoading
@@ -462,7 +478,7 @@ export function PostDealModa({ open, onClose, onSubmit }: PostDealModaProps) {
 							/>
 						</Field>
 
-						<Field label="Category (required)">
+						<Field label="Category">
 							<input
 								required
 								value={form.category}
